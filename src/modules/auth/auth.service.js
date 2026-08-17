@@ -11,13 +11,12 @@ const prisma = getPrisma();
 const signup = async ({ name, email, password, slug }) => {
   // Check if user already exists
   // console.log(prisma);
-  console.log(prisma.user);
+  // console.log(prisma.user);
   const existingUser = await prisma.user.findUnique({
     where: {
       email,
     },
   });
-  console.log("existingUser", existingUser);
 
   if (existingUser) {
     throw new ApiError("Email already in use", 400);
@@ -29,7 +28,8 @@ const signup = async ({ name, email, password, slug }) => {
   // Create user
   const user = await prisma.user.create({
     data: {
-      name,
+      firstName: name,
+      lastName: name,
       email,
       password: hashedPassword,
       slug,

@@ -6,7 +6,6 @@ dotenv.config({ quiet: true });
 //this function will throw an error if the environment variable is not defined
 const requireEnvironmentVariable = (name) => {
   const value = process.env[name];
-  console.log(name, value);
 
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
