@@ -1,0 +1,49 @@
+{
+  "name": "galleries-manager",
+  "version": "1.0.0",
+  "description": "REST API foundation for a furniture gallery management platform",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:dev": "nodemon src/server.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "format": "prettier --write \"{src,test,prisma}/**/*.js\" \"*.{js,json,md}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"{src,test,prisma}/**/*.js\" \"*.{js,json,md}\" --ignore-path .prettierignore",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-async-handler": "^1.2.0",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.11.0",
+    "nodemailer": "^9.0.5",
+    "pg": "^8.22.0",
+    "slugify": "^1.6.9"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@prisma/dev": "^0.25.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.8.0",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
+    "prisma": "^7.9.1",
+    "supertest": "^7.2.2"
+  }
+}

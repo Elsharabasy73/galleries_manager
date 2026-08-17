@@ -1,0 +1,119 @@
+const slugify = require("slugify");
+const { check } = require("express-validator");
+
+const validatorMiddleware = require("../../middlewares/validation.middleware");
+
+exports.signupValidator = [
+  check("name")
+    .notEmpty()
+    .withMessage("The name is required")
+    .isLength({ min: 3 })
+    .withMessage("Too short user name")
+    .isLength({ max: 60 })
+    .withMessage("Too long user name")
+    .custom((val, { req }) => {
+      req.body.slug = slugify(val, {
+        lower: true,
+        strict: true,
+      });
+
+      return true;
+    }),
+
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail(),
+
+  check("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
+
+  check("passwordConfirm")
+    .notEmpty()
+    .withMessage("Password confirmation is required")
+    .custom((val, { req }) => {
+      if (val !== req.body.password) {
+        throw new Error("Passwords do not match");
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+exports.loginValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail(),
+
+  check("password").notEmpty().withMessage("Password is required"),
+
+  validatorMiddleware,
+];
+
+exports.forgotPasswordValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail(),
+
+  validatorMiddleware,
+];
+
+exports.verifyResetPasswordOTPValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail(),
+
+  check("otp")
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits")
+    .isNumeric()
+    .withMessage("OTP must contain only numbers"),
+
+  validatorMiddleware,
+];
+
+exports.resetPasswordValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail(),
+
+  check("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
+
+  check("passwordConfirm")
+    .notEmpty()
+    .withMessage("Password confirmation is required")
+    .custom((val, { req }) => {
+      if (val !== req.body.password) {
+        throw new Error("Passwords do not match");
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];

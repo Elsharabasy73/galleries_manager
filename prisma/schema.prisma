@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  gallery_owner
+  employee
+  craftsman
+  user
+}
+
+enum ProductStatus {
+  draft
+  active
+  archived
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  phone     String?
+  avatar    String?
+  role      Role     @default(user)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedGallery   Gallery?    @relation("GalleryOwner")
+  employeeProfile Employee?   @relation("EmployeeProfile")
+  craftsmanProfile Craftsman? @relation("CraftsmanProfile")
+  createdProducts Product[]   @relation("ProductCreator")
+
+  @@index([role])
+}
+
+model Gallery {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  address     String?
+  city        String?
+  country     String?
+  logo        String?
+  banner      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId String @unique
+  owner   User   @relation("GalleryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  employees Employee[] @relation("GalleryEmployees")
+  products  Product[]  @relation("GalleryProducts")
+
+  @@index([ownerId])
+}
+
+model Employee {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  galleryId String
+  title     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation("EmployeeProfile", fields: [userId], references: [id], onDelete: Cascade)
+  gallery Gallery @relation("GalleryEmployees", fields: [galleryId], references: [id], onDelete: Cascade)
+
+  @@index([galleryId])
+}
+
+model Product {
+  id             String        @id @default(uuid())
+  galleryId      String
+  createdById    String
+  name           String
+  slug           String
+  description    String?
+  price          Decimal       @db.Decimal(10, 2)
+  compareAtPrice Decimal?      @db.Decimal(10, 2)
+  stock          Int           @default(0)
+  status         ProductStatus @default(active)
+  materials      String[]
+  dimensions     String?
+  imageUrl       String?
+  isFeatured     Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  gallery   Gallery @relation("GalleryProducts", fields: [galleryId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("ProductCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([galleryId, slug])
+  @@index([galleryId, status])
+  @@index([name])
+}
+
+model Craftsman {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  displayName   String?
+  specialty     String?
+  bio           String?
+  portfolioUrl  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation("CraftsmanProfile", fields: [userId], references: [id], onDelete: Cascade)
+}

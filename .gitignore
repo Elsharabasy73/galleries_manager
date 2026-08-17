@@ -141,3 +141,17 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+schema.txt
+
+# Runtime uploads
+storage/uploads/*
+!storage/uploads/users/
+!storage/uploads/galleries/
+!storage/uploads/products/
+storage/uploads/users/*
+storage/uploads/galleries/*
+storage/uploads/products/*
+!storage/uploads/users/.gitkeep
+!storage/uploads/galleries/.gitkeep
+!storage/uploads/products/.gitkeep
