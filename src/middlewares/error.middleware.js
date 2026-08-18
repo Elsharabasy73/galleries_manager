@@ -1,6 +1,7 @@
 const errorHandler = (error, req, res, next) => {
-  const statusCode = error.statusCode || 500;
-  const status = error.status || "error";
+  let statusCode = error.statusCode || 500;
+  let status = error.status || "error";
+
   const isProduction = process.env.NODE_ENV === "production";
 
   if (res.headersSent) {
@@ -16,8 +17,28 @@ const errorHandler = (error, req, res, next) => {
 
   let message = error.message || "Internal server error";
 
-  if (prismaErrorNames.includes(error.name)) {
-    message = "Invalid request data.";
+  if (error.code === "P2002") {
+    statusCode = 400;
+    status = "fail";
+    message = "A record with this value already exists.";
+  } else if (error.code === "P2003") {
+    statusCode = 400;
+    status = "fail";
+    message = "A referenced record does not exist.";
+  } else if (error.code === "P2025") {
+    statusCode = 404;
+    status = "fail";
+    message = "Record not found.";
+  } else if (error.name === "PrismaClientValidationError") {
+    statusCode = 400;
+    status = "fail";
+
+    // KEEP THE REAL PRISMA ERROR
+    message = error.message;
+  } else if (prismaErrorNames.includes(error.name)) {
+    statusCode = 400;
+    status = "fail";
+    message = error.message;
   } else if (isProduction && !error.isOperational) {
     message = "Internal server error";
   }

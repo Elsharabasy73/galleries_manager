@@ -8,10 +8,10 @@ const { generateAuthToken } = require("../../shared/utils/jwt");
 
 const prisma = getPrisma();
 
-const signup = async ({ firstName, lastName, email, password }) => {
+const signup = async (userData) => {
   const existingUser = await prisma.user.findUnique({
     where: {
-      email,
+      email: userData.email,
     },
   });
 
@@ -19,15 +19,12 @@ const signup = async ({ firstName, lastName, email, password }) => {
     throw new ApiError("Email already in use", 400);
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = await bcrypt.hash(userData.password, 12);
+  userData.password = hashedPassword;
 
   const user = await prisma.user.create({
     data: {
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      role: "user",
+      ...userData,
     },
   });
 
@@ -47,7 +44,7 @@ const login = async ({ email, password }) => {
   });
 
   if (!user) {
-    throw new ApiError("Invalid email or password", 401);
+    throw new ApiError("Invalid email or password.", 401);
   }
 
   const passwordCorrect = await bcrypt.compare(password, user.password);

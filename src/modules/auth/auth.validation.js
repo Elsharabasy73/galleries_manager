@@ -59,6 +59,11 @@ exports.signupValidator = [
 
       return true;
     }),
+  check("role")
+    .notEmpty()
+    .withMessage("Role is required")
+    .isIn(["admin", "gallery_owner", "craftsman", "user"])
+    .withMessage("Invalid role. Allowed roles: gallery_owner, craftsman, user"),
 
   validatorMiddleware,
 ];

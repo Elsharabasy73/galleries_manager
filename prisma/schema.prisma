@@ -26,6 +26,7 @@ model User {
   password  String
   firstName String?
   lastName  String?
+  slug      String?
   phone     String?
   avatar    String?
   role      Role     @default(user)
@@ -33,27 +34,30 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownedGallery   Gallery?    @relation("GalleryOwner")
-  employeeProfile Employee?   @relation("EmployeeProfile")
+  ownedGallery     Gallery?   @relation("GalleryOwner")
+  employeeProfile  Employee?  @relation("EmployeeProfile")
   craftsmanProfile Craftsman? @relation("CraftsmanProfile")
-  createdProducts Product[]   @relation("ProductCreator")
+  createdProducts  Product[]  @relation("ProductCreator")
 
   @@index([role])
 }
 
 model Gallery {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  description String?
-  address     String?
-  city        String?
-  country     String?
-  logo        String?
-  banner      String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  mapAddressUrl String?
+  phone         String?
+  country       String?
+  city          String?
+  street        String?
+  logo          String?
+  images        String[]
+  banner        String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   ownerId String @unique
   owner   User   @relation("GalleryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
@@ -84,6 +88,8 @@ model Product {
   galleryId      String
   createdById    String
   name           String
+  mainImageUrl   String?
+  images         String[]
   slug           String
   description    String?
   price          Decimal       @db.Decimal(10, 2)
@@ -92,7 +98,6 @@ model Product {
   status         ProductStatus @default(active)
   materials      String[]
   dimensions     String?
-  imageUrl       String?
   isFeatured     Boolean       @default(false)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -106,14 +111,14 @@ model Product {
 }
 
 model Craftsman {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  displayName   String?
-  specialty     String?
-  bio           String?
-  portfolioUrl  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  displayName  String?
+  specialty    String?
+  bio          String?
+  portfolioUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user User @relation("CraftsmanProfile", fields: [userId], references: [id], onDelete: Cascade)
 }

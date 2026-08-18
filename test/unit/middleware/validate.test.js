@@ -44,4 +44,41 @@ describe("validate middleware", () => {
     assert.equal(Array.isArray(response.body.errors), true);
     assert.equal(response.body.errors[0].path, "name");
   });
+
+  it("returns a useful message for duplicate Prisma records", async () => {
+    const app = express();
+
+    app.get("/duplicate", (req, res, next) => {
+      const error = new Error("Unique constraint failed");
+      error.name = "PrismaClientKnownRequestError";
+      error.code = "P2002";
+      next(error);
+    });
+    app.use(errorHandler);
+
+    const response = await request(app).get("/duplicate");
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.status, "fail");
+    assert.equal(response.body.message, "A record with this value already exists.");
+  });
+
+  it("explains Prisma Client validation failures", async () => {
+    const app = express();
+
+    app.get("/prisma-client", (req, res, next) => {
+      const error = new Error("Unknown argument `slug`");
+      error.name = "PrismaClientValidationError";
+      next(error);
+    });
+    app.use(errorHandler);
+
+    const response = await request(app).get("/prisma-client");
+
+    assert.equal(response.status, 500);
+    assert.equal(
+      response.body.message,
+      "Database client is out of date. Regenerate Prisma Client and restart the server.",
+    );
+  });
 });
