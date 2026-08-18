@@ -57,8 +57,11 @@ exports.resizeProductImages = asyncHandler(async (req, res, next) => {
 //@route POST /api/v1/galleries
 //@access Private (gallery_owner)
 const createGallery = asyncHandler(async (req, res) => {
-  req.body.ownerId = req.user.id;
-  const gallery = await galleryService.createGallery(req.body);
+  const galleryData = {
+    ...req.body,
+    ownerId: req.user.id,
+  };
+  const gallery = await galleryService.createGallery(galleryData);
   res.status(201).json({
     status: "success",
     data: gallery,
