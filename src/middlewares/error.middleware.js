@@ -1,66 +1,34 @@
-const errorHandler = (error, req, res, next) => {
-  let statusCode = error.statusCode || 500;
-  let status = error.status || "error";
+const ApiError = require("../shared/utils/ApiError");
 
-  const isProduction = process.env.NODE_ENV === "production";
+const sendErrorForDev = (err, res) =>
+  res.status(err.statusCode).json({
+    status: err.status,
+    error: err,
+    message: err.message,
+    stack: err.stack,
+  });
 
-  if (res.headersSent) {
-    return next(error);
+const sendErrorForProd = (err, res) =>
+  res.status(err.statusCode).json({
+    status: err.status,
+    message: err.message,
+  });
+
+const handleJsonWebInvalidSignature = () => new ApiError("Invalid token", 401);
+const handleJsonExpiredToken = () => new ApiError("Token expired", 401);
+
+const errorHandler = (err, req, res, next) => {
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || "error";
+
+  if (process.env.NODE_ENV === "development") {
+    sendErrorForDev(err, res);
+  } else {
+    if (err.name === "JsonWebTokenError") err = handleJsonWebInvalidSignature();
+    if (err.name === "ExpiredTokenError") err = handleJsonExpiredToken();
+
+    sendErrorForProd(err, res);
   }
-
-  const prismaErrorNames = [
-    "PrismaClientValidationError",
-    "PrismaClientKnownRequestError",
-    "PrismaClientUnknownRequestError",
-    "PrismaClientRustPanicError",
-  ];
-
-  let message = error.message || "Internal server error";
-
-  if (error.code === "P2002") {
-    statusCode = 400;
-    status = "fail";
-    message = "A record with this value already exists.";
-  } else if (error.code === "P2003") {
-    statusCode = 400;
-    status = "fail";
-    message = "A referenced record does not exist.";
-  } else if (error.code === "P2025") {
-    statusCode = 404;
-    status = "fail";
-    message = "Record not found.";
-  } else if (error.name === "PrismaClientValidationError") {
-    statusCode = 400;
-    status = "fail";
-
-    // KEEP THE REAL PRISMA ERROR
-    message = error.message;
-  } else if (prismaErrorNames.includes(error.name)) {
-    statusCode = 400;
-    status = "fail";
-    message = error.message;
-  } else if (isProduction && !error.isOperational) {
-    message = "Internal server error";
-  }
-
-  const response = {
-    status,
-    message,
-  };
-
-  if (error.details) {
-    response.errors = error.details;
-  }
-
-  if (error.code) {
-    response.code = error.code;
-  }
-
-  if (!isProduction && !prismaErrorNames.includes(error.name)) {
-    response.stack = error.stack;
-  }
-
-  return res.status(statusCode).json(response);
 };
 
 module.exports = errorHandler;
