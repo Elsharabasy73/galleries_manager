@@ -8,10 +8,7 @@ const { generateAuthToken } = require("../../shared/utils/jwt");
 
 const prisma = getPrisma();
 
-const signup = async ({ name, email, password, slug }) => {
-  // Check if user already exists
-  // console.log(prisma);
-  // console.log(prisma.user);
+const signup = async ({ firstName, lastName, email, password }) => {
   const existingUser = await prisma.user.findUnique({
     where: {
       email,
@@ -22,21 +19,18 @@ const signup = async ({ name, email, password, slug }) => {
     throw new ApiError("Email already in use", 400);
   }
 
-  // Hash password
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  // Create user
   const user = await prisma.user.create({
     data: {
-      firstName: name,
-      lastName: name,
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
-      slug,
+      role: "user",
     },
   });
 
-  // Generate JWT
   const token = generateAuthToken({ userId: user.id, role: user.role });
 
   return {
@@ -188,7 +182,10 @@ const resetPassword = async ({ email, password }) => {
     },
   });
 
-  const token = updatedUser.generateAuthToken(updatedUser.id);
+  const token = generateAuthToken({
+    userId: updatedUser.id,
+    role: updatedUser.role,
+  });
 
   return {
     user: updatedUser,

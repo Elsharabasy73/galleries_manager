@@ -7,19 +7,35 @@ const errorHandler = (error, req, res, next) => {
     return next(error);
   }
 
+  const prismaErrorNames = [
+    "PrismaClientValidationError",
+    "PrismaClientKnownRequestError",
+    "PrismaClientUnknownRequestError",
+    "PrismaClientRustPanicError",
+  ];
+
+  let message = error.message || "Internal server error";
+
+  if (prismaErrorNames.includes(error.name)) {
+    message = "Invalid request data.";
+  } else if (isProduction && !error.isOperational) {
+    message = "Internal server error";
+  }
+
   const response = {
     status,
-    message:
-      isProduction && !error.isOperational
-        ? "Internal server error"
-        : error.message || "Internal server error",
+    message,
   };
 
   if (error.details) {
     response.errors = error.details;
   }
 
-  if (!isProduction) {
+  if (error.code) {
+    response.code = error.code;
+  }
+
+  if (!isProduction && !prismaErrorNames.includes(error.name)) {
     response.stack = error.stack;
   }
 

@@ -4,13 +4,29 @@ const { check } = require("express-validator");
 const validatorMiddleware = require("../../middlewares/validation.middleware");
 
 exports.signupValidator = [
-  check("name")
+  check("firstName")
     .notEmpty()
-    .withMessage("The name is required")
+    .withMessage("The first name is required")
     .isLength({ min: 3 })
-    .withMessage("Too short user name")
+    .withMessage("Too short first name")
     .isLength({ max: 60 })
-    .withMessage("Too long user name")
+    .withMessage("Too long first name")
+    .custom((val, { req }) => {
+      req.body.slug = slugify(val, {
+        lower: true,
+        strict: true,
+      });
+
+      return true;
+    }),
+
+  check("lastName")
+    .notEmpty()
+    .withMessage("The last name is required")
+    .isLength({ min: 3 })
+    .withMessage("Too short last name")
+    .isLength({ max: 60 })
+    .withMessage("Too long last name")
     .custom((val, { req }) => {
       req.body.slug = slugify(val, {
         lower: true,
