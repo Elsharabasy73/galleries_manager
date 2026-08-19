@@ -38,15 +38,12 @@ exports.updateOne = (model) =>
     const { id } = req.params;
 
     try {
-      console.log("id",id);
-      console.log(req.body);
       const document = await model.update({
         where: {
           id,
         },
         data: req.body,
       });
-      console.log("document",document);
 
       res.status(200).json({
         data: document,

@@ -1,5 +1,8 @@
 const { check, param } = require("express-validator");
 const slugify = require("slugify");
+const { getPrisma } = require("../../config/prisma");
+
+const prisma = getPrisma();
 
 const validatorMiddleware = require("../../middlewares/validation.middleware");
 
@@ -77,7 +80,19 @@ const galleryIdValidator = param("id")
   .notEmpty()
   .withMessage("No id provided")
   .isUUID()
-  .withMessage("Invalid gallery ID");
+  .withMessage("Invalid gallery ID")
+  .custom(async(value, { req }) => {
+    const gallery =await prisma.gallery.findUnique({
+      where: {
+        id: value,
+      },
+    });
+    if (!gallery) {
+      throw new Error("Invalid gallery ID");
+    }
+    req.gallery = gallery;
+    return true;
+  });
 
 // Create
 const createGalleryValidator = [

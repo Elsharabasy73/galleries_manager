@@ -9,7 +9,9 @@ const {
   getAllGalleries,
   getGallery,
   updateGallery,
+  resizeAndUpdateGalleryImages,
   deleteGallery,
+  deleteGalleryImages,
 } = require("./gallery.controller");
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
@@ -21,6 +23,7 @@ const {
   deleteGalleryValidator,
 } = require("./gallery.validation");
 
+//resizeGallaryImages must be used after updateGalleryValidator so the slug is ready
 router
   .route("/")
   .get(getAllGalleries)
@@ -41,14 +44,15 @@ router
     protect,
     allowTo(["gallery_owner"]),
     uploadgalleryImages,
-    resizeGallaryImages,
     updateGalleryValidator,
+    resizeAndUpdateGalleryImages,
     updateGallery,
   )
   .delete(
     protect,
     allowTo(["gallery_owner"]),
     deleteGalleryValidator,
+    deleteGalleryImages,
     deleteGallery,
   );
 
