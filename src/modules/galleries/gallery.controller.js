@@ -162,12 +162,12 @@ const createGallery = factory.createOne(prisma.gallery);
 
 //@desc Get all galleries
 //@route GET /api/v1/galleries
-//@access Private (gallery_owner)
+//@access public
 const getAllGalleries = factory.getAll(prisma.gallery);
 
 //@desc Get a gallery by id
 //@route GET /api/v1/galleries/:id
-//@access Private (gallery_owner)
+//@access public
 const getGallery = factory.getOne(prisma.gallery);
 
 //@desc Update a gallery by id

@@ -50,7 +50,7 @@ router
   )
   .delete(
     protect,
-    allowTo(["gallery_owner"]),
+    allowTo(["gallery_owner", "admin"]),
     deleteGalleryValidator,
     deleteGalleryImages,
     deleteGallery,

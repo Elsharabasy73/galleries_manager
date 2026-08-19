@@ -88,6 +88,7 @@ model Product {
   id             String        @id @default(uuid())
   galleryId      String
   createdById    String
+  categoryId     String
   name           String
   mainImageUrl   String?
   images         String[]
@@ -105,10 +106,22 @@ model Product {
 
   gallery   Gallery @relation("GalleryProducts", fields: [galleryId], references: [id], onDelete: Cascade)
   createdBy User    @relation("ProductCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  category  Category @relation("CategoryProducts", fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([galleryId, slug])
   @@index([galleryId, status])
   @@index([name])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  arabicName String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[] @relation("CategoryProducts")
 }
 
 model Craftsman {

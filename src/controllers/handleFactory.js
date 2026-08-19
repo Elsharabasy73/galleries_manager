@@ -3,6 +3,7 @@ const ApiError = require("../shared/utils/ApiError");
 
 exports.createOne = (model) =>
   asyncHandler(async (req, res) => {
+    console.log("model:",model);
     const document = await model.create({
       data: req.body,
     });
