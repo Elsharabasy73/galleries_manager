@@ -1,73 +1,90 @@
 const asyncHandler = require("express-async-handler");
-const ApiError = require("../utils/apiError");
-const ApiFeatures = require("../utils/apiFeatures");
+const ApiError = require("../shared/utils/ApiError");
 
-exports.deleteOne = (Model) =>
-  asyncHandler(async (req, res, next) => {
-    const { id } = req.params;
-    const document = await Model.findByIdAndDelete(id);
+exports.createOne = (model) =>
+  asyncHandler(async (req, res) => {
+    const document = await model.create({
+      data: req.body,
+    });
 
-    if (!document) {
-      return next(new ApiError(`No document for this id ${id}`, 404));
-    }
-    res.status(204).send();
+    res.status(201).json({
+      data: document,
+    });
   });
 
-exports.updateOne = (Model) =>
+exports.deleteOne = (model) =>
   asyncHandler(async (req, res, next) => {
-    const document = await Model.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+    const { id } = req.params;
+
+    try {
+      const document = await model.delete({
+        where: {
+          id,
+        },
+      });
+
+      res.status(204).send(document);
+    } catch (error) {
+      if (error.code === "P2025") {
+        return next(new ApiError(`No document for this id ${id}`, 404));
+      }
+
+      next(error);
+    }
+  });
+
+exports.updateOne = (model) =>
+  asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
+
+    try {
+      console.log("id",id);
+      console.log(req.body);
+      const document = await model.update({
+        where: {
+          id,
+        },
+        data: req.body,
+      });
+      console.log("document",document);
+
+      res.status(200).json({
+        data: document,
+      });
+    } catch (error) {
+      if (error.code === "P2025") {
+        return next(new ApiError(`No document for this id ${id}`, 404));
+      }
+
+      next(error);
+    }
+  });
+
+exports.getOne = (model) =>
+  asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
+
+    const document = await model.findUnique({
+      where: {
+        id,
+      },
     });
 
     if (!document) {
-      return next(
-        new ApiError(`No document for this id ${req.params.id}`, 404),
-      );
-    }
-    res.status(200).json({ data: document });
-  });
-
-exports.createOne = (Model) =>
-  asyncHandler(async (req, res) => {
-    const newDoc = await Model.create(req.body);
-    res.status(201).json({ data: newDoc });
-  });
-
-exports.getOne = (Model, populateOpts) =>
-  asyncHandler(async (req, res, next) => {
-    const { id } = req.params;
-    let query = Model.findById(id);
-    if (populateOpts) {
-      query = query.populate(populateOpts);
-    }
-    const document = await query;
-    if (!document) {
       return next(new ApiError(`No document for this id ${id}`, 404));
     }
-    res.status(200).json({ data: document });
+
+    res.status(200).json({
+      data: document,
+    });
   });
 
-exports.getAll = (Model, modelName = "") =>
+exports.getAll = (model) =>
   asyncHandler(async (req, res) => {
-    let filter = {};
+    const documents = await model.findMany();
 
-    if (req.filterObj) {
-      filter = req.filterObj;
-    }
-    // Build query
-    const documentsCounts = await Model.countDocuments();
-    const apiFeatures = new ApiFeatures(Model.find(filter), req.query)
-      .paginate(documentsCounts)
-      .filter()
-      .search(modelName)
-      .limitFields()
-      .sort();
-
-    // Execute query
-    const { mongooseQuery, paginationResult } = apiFeatures;
-    const documents = await mongooseQuery;
-
-    res
-      .status(200)
-      .json({ results: documents.length, paginationResult, data: documents });
+    res.status(200).json({
+      results: documents.length,
+      data: documents,
+    });
   });
