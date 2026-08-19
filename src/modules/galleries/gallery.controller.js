@@ -40,6 +40,9 @@ const deleteGalleryImages = asyncHandler(async (req, res, next) => {
   next();
 });
 
+const createStoragePath = (pathEndPoint) =>
+  path.join(process.cwd(), "storage", "uploads", "galleries", pathEndPoint);
+
 //@desc Resize gallery images
 //@route POST /api/v1/galleries/:id/images
 //@access Private (gallery_owner)
@@ -47,15 +50,7 @@ const resizeGalleryImages = asyncHandler(async (req, res, next) => {
   // Create a unique folder for this gallery
   const galleryFolderName = `${req.body.slug}-${uuidv4()}`;
 
-  //fun
-  const galleryFolderPath = path.join(
-    process.cwd(),
-    "storage",
-    "uploads",
-    "galleries",
-    galleryFolderName,
-  );
-
+  const galleryFolderPath = createStoragePath(galleryFolderName);
   // Create folder before saving images
   await fs.mkdir(galleryFolderPath, {
     recursive: true,
@@ -107,14 +102,7 @@ const resizeGalleryImages = asyncHandler(async (req, res, next) => {
 //@route PUT /api/v1/galleries/:id/images
 //@access Private (gallery_owner)
 const resizeAndUpdateGalleryImages = asyncHandler(async (req, res, next) => {
-  //fun
-  const galleryFolderPath = path.join(
-    process.cwd(),
-    "storage",
-    "uploads",
-    "galleries",
-    req.gallery.storageFolder,
-  );
+  const galleryFolderPath = createStoragePath(req.gallery.storageFolder);
 
   // Replace banner
   if (req.files?.banner?.length) {
