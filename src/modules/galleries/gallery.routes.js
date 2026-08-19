@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const {
   uploadgalleryImages,
-  resizeGallaryImages,
+  resizeGalleryImages,
   addOwnerId,
   createGallery,
   getAllGalleries,
@@ -32,7 +32,7 @@ router
     allowTo(["gallery_owner"]),
     uploadgalleryImages,
     createGalleryValidator,
-    resizeGallaryImages,
+    resizeGalleryImages,
     addOwnerId,
     createGallery,
   );

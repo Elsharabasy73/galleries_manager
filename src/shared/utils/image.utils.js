@@ -9,16 +9,15 @@ const {
 } = require("./storage.utils");
 
 // Generate a filesystem-safe date
-const getFileDate = () =>
-  new Date().toISOString().replace(/[:.]/g, "-");
+const getFileDate = () => new Date().toISOString().replace(/[:.]/g, "-");
 
 // Process and save a single image
 const processImage = async ({
   file,
   folderPath,
   prefix,
-  width,
-  height,
+  width = 500,
+  height = 1000,
   options = {},
 }) => {
   const date = getFileDate();
@@ -39,8 +38,8 @@ const processImages = async ({
   files,
   folderPath,
   prefix = "image",
-  width,
-  height,
+  width = 500,
+  height = 1000,
   options = {},
 }) => {
   return Promise.all(
@@ -64,8 +63,8 @@ const replaceImage = async ({
   storageFolder,
   oldFileName,
   prefix,
-  width,
-  height,
+  width = 500,
+  height = 1000,
   options = {},
 }) => {
   // First create the new image
@@ -97,8 +96,8 @@ const replaceImages = async ({
   storageFolder,
   oldFileNames = [],
   prefix = "image",
-  width,
-  height,
+  width = 500,
+  height = 1000,
   options = {},
 }) => {
   // Create new images
