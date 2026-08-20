@@ -1,11 +1,13 @@
 class ApiFeatures {
-  constructor(dbModel, queryParamsString, modelName = "") {
+  constructor(dbModel, queryParamsString, modelName = "", baseWhere = {}) {
     this.dbModel = dbModel;
     this.queryParamsString = queryParamsString;
     this.modelName = modelName;
 
     this.query = {
-      where: {},
+      where: {
+        ...baseWhere,
+      },
     };
   }
 

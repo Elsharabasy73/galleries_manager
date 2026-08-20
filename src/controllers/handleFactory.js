@@ -80,7 +80,12 @@ exports.getOne = (model) =>
 
 exports.getAll = (Model, modelName = "") => {
   return asyncHandler(async (req, res) => {
-    const apiFeatures = new ApiFeatures(Model, req.query, modelName);
+    let baseWhere = {};
+    if (req.query) {
+      baseWhere = req.params;
+    }
+    console.log("baseWhere:", baseWhere);
+    const apiFeatures = new ApiFeatures(Model, req.query, modelName, baseWhere);
     apiFeatures
       .search(req.query.keyword)
       .paginate()
