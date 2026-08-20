@@ -1,12 +1,15 @@
 const asyncHandler = require("express-async-handler");
+const { getPrisma } = require("../../config/prisma");
 
 const employeeService = require("./employee.service");
+const factory = require("../../controllers/handleFactory");
+
+const prisma = getPrisma();
 
 //@desc Create a new employee
 //@route POST /api/v1/employees
 //@access Private (gallery_owner)
 const createEmployee = asyncHandler(async (req, res) => {
-  console.log("params: ", req.params);
   if (req.params.galleryId) {
     req.body.galleryId = req.params.galleryId;
   }
@@ -21,14 +24,16 @@ const createEmployee = asyncHandler(async (req, res) => {
 //@desc Get all employees
 //@route GET /api/v1/employees
 //@access Private (gallery_owner)
-const getAllEmployees = asyncHandler(async (req, res) => {
-  const employees = await employeeService.getAllEmployees(req.user);
+// const getAllEmployees = asyncHandler(async (req, res) => {
+//   const employees = await employeeService.getAllEmployees(req.user);
 
-  res.status(200).json({
-    results: employees.length,
-    data: employees,
-  });
-});
+//   res.status(200).json({
+//     results: employees.length,
+//     data: employees,
+//   });
+// });
+
+const getAllEmployees = factory.getAll(prisma.user, "employee");
 
 //@desc Get an employee by id
 //@route GET /api/v1/employees/:id

@@ -1,9 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../shared/utils/ApiError");
+const ApiFeatures = require("../shared/utils/apiFeatures");
 
 exports.createOne = (model) =>
   asyncHandler(async (req, res) => {
-    console.log("model:",model);
+    console.log("model:", model);
     const document = await model.create({
       data: req.body,
     });
@@ -77,12 +78,26 @@ exports.getOne = (model) =>
     });
   });
 
-exports.getAll = (model) =>
-  asyncHandler(async (req, res) => {
-    const documents = await model.findMany();
+// exports.getAll = (model) =>
+//   asyncHandler(async (req, res) => {
+//     const documents = await model.findMany();
 
+//     res.status(200).json({
+//       results: documents.length,
+//       data: documents,
+//     });
+//   });
+
+exports.getAll = (Model, modelName = "") => {
+  return asyncHandler(async (req, res) => {
+    const apiFeatures = new ApiFeatures(Model, req.query, modelName);
+    apiFeatures.search(req.query.keyword).paginate().limitFields().filter();
+
+    const documents = await apiFeatures.execute();
+    // console.log("documents:", documents);
     res.status(200).json({
       results: documents.length,
-      data: documents,
+      data: documents.map((document) => document),
     });
   });
+};
