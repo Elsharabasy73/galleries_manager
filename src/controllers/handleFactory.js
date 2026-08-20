@@ -78,20 +78,15 @@ exports.getOne = (model) =>
     });
   });
 
-// exports.getAll = (model) =>
-//   asyncHandler(async (req, res) => {
-//     const documents = await model.findMany();
-
-//     res.status(200).json({
-//       results: documents.length,
-//       data: documents,
-//     });
-//   });
-
 exports.getAll = (Model, modelName = "") => {
   return asyncHandler(async (req, res) => {
     const apiFeatures = new ApiFeatures(Model, req.query, modelName);
-    apiFeatures.search(req.query.keyword).paginate().limitFields().filter();
+    apiFeatures
+      .search(req.query.keyword)
+      .paginate()
+      .limitFields()
+      .filter()
+      .sort();
 
     const documents = await apiFeatures.execute();
     // console.log("documents:", documents);

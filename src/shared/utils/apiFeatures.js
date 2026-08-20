@@ -18,12 +18,13 @@ class ApiFeatures {
 
     const where = {};
 
+    //Object.entries(queryParamsStringObj): [ [ 'phone', '010260417501' ] ]
     for (const [key, value] of Object.entries(queryParamsStringObj)) {
-      // Handle operators:
-      // price[gte]=100
-      // price[lte]=500
       if (typeof value === "object" && value !== null) {
         const operators = {};
+        // Handle operators:
+        // price[gte]=100
+        // price[lte]=500
 
         for (const [operator, operatorValue] of Object.entries(value)) {
           switch (operator) {
@@ -47,6 +48,8 @@ class ApiFeatures {
 
         where[key] = operators;
       } else {
+        // Handle operators:
+        // price=100
         where[key] = value;
       }
     }
@@ -102,6 +105,30 @@ class ApiFeatures {
     const limit = parseInt(this.queryParamsString.limit, 10) || 10;
     this.query.take = limit;
     this.query.skip = (page - 1) * limit;
+
+    return this;
+  }
+
+  sort() {
+    if (this.queryParamsString.sort) {
+      const sortFields = this.queryParamsString.sort.split(",");
+
+      this.query.orderBy = sortFields.map((field) => {
+        if (field.startsWith("-")) {
+          return {
+            [field.substring(1)]: "desc",
+          };
+        }
+
+        return {
+          [field]: "asc",
+        };
+      });
+    } else {
+      this.query.orderBy = {
+        createdAt: "desc",
+      };
+    }
 
     return this;
   }
