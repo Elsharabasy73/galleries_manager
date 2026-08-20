@@ -71,6 +71,10 @@ class ApiFeatures {
       fields.forEach((field) => {
         this.query.select[field] = true;
       });
+
+      // Prisma requires relations to be selected within `select`.
+      Object.assign(this.query.select, this.query.include);
+      delete this.query.include;
     }
 
     return this;
