@@ -64,16 +64,36 @@ class ApiFeatures {
 
   limitFields() {
     if (this.queryParamsString.fields) {
-      const fields = this.queryParamsString.fields.split(",");
+      const fields = this.queryParamsString.fields
+        .split(",")
+        .map((field) => field.trim())
+        .filter(Boolean);
 
       this.query.select = {};
 
       fields.forEach((field) => {
+        const relationField = field.match(/^([^\[\]]+)\[([^\[\]]+)\]$/);
+
+        if (relationField) {
+          const [, relation, nestedField] = relationField;
+
+          if (!this.query.select[relation]) {
+            this.query.select[relation] = { select: {} };
+          }
+
+          this.query.select[relation].select[nestedField] = true;
+          return;
+        }
+
         this.query.select[field] = true;
       });
 
       // Prisma requires relations to be selected within `select`.
-      Object.assign(this.query.select, this.query.include);
+      Object.entries(this.query.include).forEach(([relation, include]) => {
+        if (!this.query.select[relation]) {
+          this.query.select[relation] = include;
+        }
+      });
       delete this.query.include;
     }
 
