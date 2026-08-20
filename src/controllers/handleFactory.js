@@ -78,14 +78,10 @@ exports.getOne = (model) =>
     });
   });
 
-exports.getAll = (Model, modelName = "") => {
+exports.getAll = (Model, modelName = "", includeOptions = {}) => {
   return asyncHandler(async (req, res) => {
-    let baseWhere = {};
-    if (req.query) {
-      baseWhere = req.params;
-    }
-    console.log("baseWhere:", baseWhere);
-    const apiFeatures = new ApiFeatures(Model, req.query, modelName, baseWhere);
+
+    const apiFeatures = new ApiFeatures(Model, req.query, modelName, includeOptions);
     apiFeatures
       .search(req.query.keyword)
       .paginate()
