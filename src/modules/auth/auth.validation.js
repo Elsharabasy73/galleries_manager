@@ -2,6 +2,7 @@ const slugify = require("slugify");
 const { check } = require("express-validator");
 
 const validatorMiddleware = require("../../middlewares/validation.middleware");
+const { ROLES } = require("../../shared/constants/roles");
 
 exports.signupValidator = [
   check("firstName")
@@ -62,7 +63,7 @@ exports.signupValidator = [
   check("role")
     .notEmpty()
     .withMessage("Role is required")
-    .isIn(["admin", "gallery_owner", "craftsman", "user"])
+    .isIn([ROLES.ADMIN, ROLES.GALLERY_OWNER, ROLES.CRAFTSMAN, ROLES.USER])
     .withMessage("Invalid role. Allowed roles: gallery_owner, craftsman, user"),
 
   validatorMiddleware,

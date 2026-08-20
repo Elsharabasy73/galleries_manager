@@ -15,6 +15,7 @@ const {
 } = require("./gallery.controller");
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
+const { ROLES } = require("../../shared/constants/roles");
 
 const {
   createGalleryValidator,
@@ -23,13 +24,17 @@ const {
   deleteGalleryValidator,
 } = require("./gallery.validation");
 
+//Employee nested routes
+const employeeRouter = require("../employees/employee.routes");
+router.use("/:galleryId/employees", employeeRouter);
+
 //resizeGallaryImages must be used after updateGalleryValidator so the slug is ready
 router
   .route("/")
   .get(getAllGalleries)
   .post(
     protect,
-    allowTo(["gallery_owner"]),
+    allowTo([ROLES.GALLERY_OWNER]),
     uploadgalleryImages,
     createGalleryValidator,
     resizeGalleryImages,
@@ -42,7 +47,7 @@ router
   .get(getGalleryValidator, getGallery)
   .put(
     protect,
-    allowTo(["gallery_owner"]),
+    allowTo([ROLES.GALLERY_OWNER]),
     uploadgalleryImages,
     updateGalleryValidator,
     resizeAndUpdateGalleryImages,
@@ -50,7 +55,7 @@ router
   )
   .delete(
     protect,
-    allowTo(["gallery_owner", "admin"]),
+    allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]),
     deleteGalleryValidator,
     deleteGalleryImages,
     deleteGallery,

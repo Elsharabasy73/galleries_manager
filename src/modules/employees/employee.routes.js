@@ -1,15 +1,16 @@
 const express = require("express");
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const {
   createEmployee,
-  getAllEmployee,
+  getAllEmployees,
   getEmployee,
   updateEmployee,
   deleteEmployee,
 } = require("./employee.controller");
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
+const { ROLES } = require("../../shared/constants/roles");
 
 const {
   createEmployeeValidator,
@@ -20,26 +21,31 @@ const {
 
 router
   .route("/")
-  .get(getAllEmployee)
+  .get(protect, allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]), getAllEmployees)
   .post(
     protect,
-    allowTo(["admin"]),
+    allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]),
     createEmployeeValidator,
     createEmployee,
   );
 
 router
   .route("/:id")
-  .get(getEmployeeValidator, getEmployee)
+  .get(
+    protect,
+    allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]),
+    getEmployeeValidator,
+    getEmployee,
+  )
   .put(
     protect,
-    allowTo(["admin"]),
+    allowTo([ROLES.GALLERY_OWNER, ROLES.EMPLOYEE, ROLES.ADMIN]),
     updateEmployeeValidator,
     updateEmployee,
   )
   .delete(
     protect,
-    allowTo(["admin"]),
+    allowTo([ROLES.GALLERY_OWNER, ROLES.EMPLOYEE, ROLES.ADMIN]),
     deleteEmployeeValidator,
     deleteEmployee,
   );

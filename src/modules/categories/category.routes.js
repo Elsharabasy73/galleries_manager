@@ -10,6 +10,7 @@ const {
 } = require("./category.controller");
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
+const { ROLES } = require("../../shared/constants/roles");
 
 const {
   createCategoryValidator,
@@ -23,7 +24,7 @@ router
   .get(getAllCategory)
   .post(
     protect,
-    allowTo(["admin"]),
+    allowTo([ROLES.ADMIN]),
     createCategoryValidator,
     createCategory,
   );
@@ -31,15 +32,10 @@ router
 router
   .route("/:id")
   .get(getCategoryValidator, getCategory)
-  .put(
-    protect,
-    allowTo(["admin"]),
-    updateCategoryValidator,
-    updateCategory,
-  )
+  .put(protect, allowTo([ROLES.ADMIN]), updateCategoryValidator, updateCategory)
   .delete(
     protect,
-    allowTo(["admin"]),
+    allowTo([ROLES.ADMIN]),
     deleteCategoryValidator,
     deleteCategory,
   );
