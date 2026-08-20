@@ -33,18 +33,7 @@ const createEmployee = asyncHandler(async (req, res) => {
 //   });
 // });
 
-const getAllEmployees = factory.getAll(prisma.employee, "employee", {
-  user: {
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      role: true,
-    },
-  },
-});
+const getAllEmployees = factory.getAll(prisma.employee, "employee");
 
 //@desc Get an employee by id
 //@route GET /api/v1/employees/:id
