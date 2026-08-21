@@ -39,7 +39,7 @@ router
   )
   .put(
     protect,
-    allowTo([ROLES.GALLERY_OWNER, ROLES.EMPLOYEE, ROLES.ADMIN]),
+    allowTo([ROLES.GALLERY_OWNER, ROLES.EMPLOYEE]),
     updateEmployeeValidator,
     updateEmployee,
   )

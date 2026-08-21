@@ -215,34 +215,51 @@ const updateEmployeeFieldsValidators = [
     }),
 ];
 
-// Reusable ID validator
-const employeeIdValidator = param("id")
+const ensureEmployeeGalleryAccess = async (value, { req }) => {
+  const employee = await prisma.employee.findUnique({
+    where: {
+      id: value,
+    },
+  });
+
+  if (!employee) {
+    throw new Error("Invalid employee ID");
+  }
+
+  req.employee = employee;
+
+  if (req.user.role === ROLES.ADMIN) {
+    return true;
+  }
+
+  if (req.user.role === ROLES.EMPLOYEE) {
+    if (employee.userId !== req.user.id) {
+      throw new Error("You can only manage your own profile");
+    }
+
+    return true;
+  }
+
+  const gallery = await prisma.gallery.findUnique({
+    where: {
+      ownerId: req.user.id,
+    },
+  });
+
+  if (!gallery || employee.galleryId !== gallery.id) {
+    throw new Error("Employee does not belong to your gallery");
+  }
+
+  return true;
+};
+
+const employeeGalleryAccessValidator = param("id")
   .notEmpty()
   .withMessage("No id provided")
   .isUUID()
   .withMessage("Invalid employee ID")
-  // .custom(async (value, { req }) => {
-  //   const employee = await prisma.employee.findUnique({
-  //     where: {
-  //       id: value,
-  //     },
-  //   });
-
-  //   if (!employee) {
-  //     throw new Error("Invalid employee ID");
-  //   }
-
-  //   req.employee = employee;
-
-  //   if (
-  //     req.params.galleryId &&
-  //     req.employee.galleryId !== req.params.galleryId
-  //   ) {
-  //     throw new Error("Employee does not belong to this gallery");
-  //   }
-
-  //   return true;
-  // });
+  .bail()
+  .custom(ensureEmployeeGalleryAccess);
 
 // Create
 const createEmployeeValidator = [
@@ -251,12 +268,15 @@ const createEmployeeValidator = [
 ];
 
 // Get one
-const getEmployeeValidator = [employeeIdValidator, validatorMiddleware];
+const getEmployeeValidator = [
+  employeeGalleryAccessValidator,
+  validatorMiddleware,
+];
 
 // Update
 const updateEmployeeValidator = [
   galleryIdParamValidator,
-  employeeIdValidator,
+  employeeGalleryAccessValidator,
   ...updateEmployeeFieldsValidators,
   validatorMiddleware,
 ];
@@ -264,7 +284,7 @@ const updateEmployeeValidator = [
 // Delete
 const deleteEmployeeValidator = [
   galleryIdParamValidator,
-  employeeIdValidator,
+  employeeGalleryAccessValidator,
   validatorMiddleware,
 ];
 
