@@ -36,7 +36,7 @@ const getEmployee = factory.getOne(prisma.employee, { user: true });
 //@access Private (gallery_owner / employee)
 const updateEmployee = asyncHandler(async (req, res) => {
   const employee = await employeeService.updateEmployee(
-    req.params.id,
+    req.employee,
     req.body,
     req.user,
   );
@@ -50,7 +50,7 @@ const updateEmployee = asyncHandler(async (req, res) => {
 //@route DELETE /api/v1/employees/:id
 //@access Private (gallery_owner / employee)
 const deleteEmployee = asyncHandler(async (req, res) => {
-  await employeeService.deleteEmployee(req.params.id, req.user);
+  await employeeService.deleteEmployee(req.employee);
 
   res.status(204).send();
 });

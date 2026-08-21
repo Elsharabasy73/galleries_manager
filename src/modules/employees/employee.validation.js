@@ -275,7 +275,6 @@ const getEmployeeValidator = [
 
 // Update
 const updateEmployeeValidator = [
-  galleryIdParamValidator,
   employeeGalleryAccessValidator,
   ...updateEmployeeFieldsValidators,
   validatorMiddleware,
@@ -283,7 +282,6 @@ const updateEmployeeValidator = [
 
 // Delete
 const deleteEmployeeValidator = [
-  galleryIdParamValidator,
   employeeGalleryAccessValidator,
   validatorMiddleware,
 ];
