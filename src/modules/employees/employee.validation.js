@@ -221,25 +221,28 @@ const employeeIdValidator = param("id")
   .withMessage("No id provided")
   .isUUID()
   .withMessage("Invalid employee ID")
-  .custom(async (value, { req }) => {
-    const employee = await prisma.employee.findUnique({
-      where: {
-        id: value,
-      },
-    });
+  // .custom(async (value, { req }) => {
+  //   const employee = await prisma.employee.findUnique({
+  //     where: {
+  //       id: value,
+  //     },
+  //   });
 
-    if (!employee) {
-      throw new Error("Invalid employee ID");
-    }
+  //   if (!employee) {
+  //     throw new Error("Invalid employee ID");
+  //   }
 
-    req.employee = employee;
+  //   req.employee = employee;
 
-    if (req.params.galleryId && req.employee.galleryId !== req.params.galleryId) {
-      throw new Error("Employee does not belong to this gallery");
-    }
+  //   if (
+  //     req.params.galleryId &&
+  //     req.employee.galleryId !== req.params.galleryId
+  //   ) {
+  //     throw new Error("Employee does not belong to this gallery");
+  //   }
 
-    return true;
-  });
+  //   return true;
+  // });
 
 // Create
 const createEmployeeValidator = [
@@ -248,11 +251,7 @@ const createEmployeeValidator = [
 ];
 
 // Get one
-const getEmployeeValidator = [
-  galleryIdParamValidator,
-  employeeIdValidator,
-  validatorMiddleware,
-];
+const getEmployeeValidator = [employeeIdValidator, validatorMiddleware];
 
 // Update
 const updateEmployeeValidator = [

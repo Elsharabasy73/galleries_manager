@@ -59,18 +59,28 @@ exports.updateOne = (model) =>
     }
   });
 
-exports.getOne = (model) =>
+exports.getOne = (model, includeOptions) =>
   asyncHandler(async (req, res, next) => {
     const { id } = req.params;
 
     const document = await model.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
+      include: includeOptions,
     });
 
     if (!document) {
       return next(new ApiError(`No document for this id ${id}`, 404));
+    }
+    //delete password from response
+    for (const key in document) {
+      if (key === "password") {
+        delete document[key];
+      }
+      for (const key2 in document[key]) {
+        if (key2 === "password") {
+          delete document[key][key2];
+        }
+      }
     }
 
     res.status(200).json({
@@ -80,8 +90,12 @@ exports.getOne = (model) =>
 
 exports.getAll = (Model, modelName = "", includeOptions = {}) => {
   return asyncHandler(async (req, res) => {
-
-    const apiFeatures = new ApiFeatures(Model, req.query, modelName, includeOptions);
+    const apiFeatures = new ApiFeatures(
+      Model,
+      req.query,
+      modelName,
+      includeOptions,
+    );
     apiFeatures
       .search(req.query.keyword)
       .paginate()

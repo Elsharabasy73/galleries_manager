@@ -70,7 +70,6 @@ class ApiFeatures {
         .map((field) => field.trim())
         .filter(Boolean);
 
-
       this.query.select = {};
 
       fields.forEach((field) => {
@@ -96,7 +95,7 @@ class ApiFeatures {
 
         this.query.select[field] = true;
       });
-      
+
       delete this.query.include;
     }
 
