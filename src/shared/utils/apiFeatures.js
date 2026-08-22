@@ -128,15 +128,36 @@ class ApiFeatures {
     return this;
   }
 
-  paginate() {
+  paginate(countDocuments = 0) {
     const page = parseInt(this.queryParamsString.page, 10) || 1;
     const limit = parseInt(this.queryParamsString.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    const endIndex = page * limit;
+
     this.query.take = limit;
-    this.query.skip = (page - 1) * limit;
+    this.query.skip = skip;
+
+    const pagination = {};
+    pagination.currentPage = page;
+    pagination.limit = limit;
+    pagination.numberOfPages = Math.ceil(countDocuments / limit);
+
+    // next page
+    if (endIndex < countDocuments) {
+      pagination.next = page + 1;
+    }
+
+    // previous page
+    if (skip > 0) {
+      pagination.prev = page - 1;
+    }
+
+    pagination.lastPage = pagination.numberOfPages || 1;
+
+    this.paginationResult = pagination;
 
     return this;
   }
-
   sort() {
     if (this.queryParamsString.sort) {
       const sortFields = this.queryParamsString.sort.split(",");
