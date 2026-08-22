@@ -34,10 +34,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownedGallery     Gallery?   @relation("GalleryOwner")
-  employeeProfile  Employee?  @relation("EmployeeProfile")
-  craftsmanProfile Craftsman? @relation("CraftsmanProfile")
-  createdProducts  Product[]  @relation("ProductCreator")
+  ownedGallery     Gallery?       @relation("GalleryOwner")
+  employeeProfile  Employee?      @relation("EmployeeProfile")
+  craftsmanProfile Craftsman?     @relation("CraftsmanProfile")
+  createdProducts  Product[]      @relation("ProductCreator")
+  wishlistItems    WishlistItem[] @relation("UserWishlist")
+  cart             Cart?          @relation("UserCart")
+  orders           Order[]        @relation("UserOrders")
 
   @@index([role])
 }
@@ -65,6 +68,7 @@ model Gallery {
 
   employees Employee[] @relation("GalleryEmployees")
   products  Product[]  @relation("GalleryProducts")
+  orders    Order[]    @relation("GalleryOrders")
 
   @@index([ownerId])
 }
@@ -108,6 +112,10 @@ model Product {
   createdBy User    @relation("ProductCreator", fields: [createdById], references: [id], onDelete: Restrict)
   category  Category @relation("CategoryProducts", fields: [categoryId], references: [id], onDelete: Cascade)
 
+  wishlistedBy WishlistItem[] @relation("ProductWishlists")
+  cartItems    CartItem[]     @relation("ProductCartItems")
+  orderItems   OrderItem[]    @relation("ProductOrderItems")
+
   @@unique([galleryId, slug])
   @@index([galleryId, status])
   @@index([name])
@@ -135,4 +143,84 @@ model Craftsman {
   updatedAt    DateTime @updatedAt
 
   user User @relation("CraftsmanProfile", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  rejected
+  cancelled
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation("UserWishlist", fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation("ProductWishlists", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation("UserCart", fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation("ProductCartItems", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String
+  galleryId       String
+  status          OrderStatus @default(pending)
+  totalPrice      Decimal     @db.Decimal(12, 2)
+  shippingAddress Json?
+  note            String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user    User        @relation("UserOrders", fields: [userId], references: [id], onDelete: Restrict)
+  gallery Gallery     @relation("GalleryOrders", fields: [galleryId], references: [id], onDelete: Restrict)
+  items   OrderItem[]
+
+  @@index([userId])
+  @@index([galleryId, status])
+}
+
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String
+  productId   String
+  productName String
+  imageUrl    String?
+  unitPrice   Decimal @db.Decimal(10, 2)
+  quantity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation("ProductOrderItems", fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
 }
