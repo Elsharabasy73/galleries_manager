@@ -10,6 +10,7 @@ const apiRoutes = require("./routes");
 
 const createApp = () => {
   const app = express();
+  app.set("query parser", "extended");
   //disable x-powered-by header for security reasons
   app.disable("x-powered-by");
   app.use(helmet());

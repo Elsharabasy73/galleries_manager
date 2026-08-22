@@ -47,7 +47,7 @@ const checkProductOwnership = asyncHandler(async (req, res, next) => {
 
 const createProduct = factory.createOne(prisma.product);
 
-const getAllProducts = factory.getAll(prisma.product);
+const getAllProducts = factory.getAll(prisma.product, "product", {gallery: true});
 
 const getProduct = factory.getOne(prisma.product);
 

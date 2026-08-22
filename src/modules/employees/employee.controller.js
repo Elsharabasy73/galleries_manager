@@ -24,7 +24,9 @@ const createEmployee = asyncHandler(async (req, res) => {
 //@desc Get all employees
 //@route GET /api/v1/employees
 //@access Private (gallery_owner)
-const getAllEmployees = factory.getAll(prisma.employee, "employee");
+const getAllEmployees = factory.getAll(prisma.employee, "employee", {
+  user: true,
+});
 
 //@desc Get an employee by id
 //@route GET /api/v1/employees/:id

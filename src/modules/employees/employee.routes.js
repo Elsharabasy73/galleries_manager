@@ -33,7 +33,7 @@ router
   .route("/:id")
   .get(
     protect,
-    allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]),
+    allowTo([ROLES.EMPLOYEE, ROLES.GALLERY_OWNER, ROLES.ADMIN]),
     getEmployeeValidator,
     getEmployee,
   )

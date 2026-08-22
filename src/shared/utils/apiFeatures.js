@@ -21,12 +21,13 @@ class ApiFeatures {
 
     //Object.entries(queryParamsStringObj): [ [ 'phone', '010260417501' ] ]
     for (const [key, value] of Object.entries(queryParamsStringObj)) {
+      console.log("value:", value);
+      console.log("key:", key);
       if (typeof value === "object" && value !== null) {
         const operators = {};
         // Handle operators:
         // price[gte]=100
         // price[lte]=500
-
         for (const [operator, operatorValue] of Object.entries(value)) {
           switch (operator) {
             case "gte":
@@ -58,7 +59,7 @@ class ApiFeatures {
       ...this.query.where,
       ...where,
     };
-
+    console.log("where:", where);
     return this;
   }
 
