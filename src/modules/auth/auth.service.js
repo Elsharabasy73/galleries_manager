@@ -5,7 +5,7 @@ const generateOtp = require("../../shared/utils/generateOTP");
 const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
 const generateOTP = require("../../shared/utils/generateOTP");
-const { OTP_PURPOSE } = require("./auth.constants");
+const { OTP_PURPOSE, EMAIL_SUBJECTS } = require("./auth.constants");
 const { sendEmail } = require("../../shared/utils/sendEmail");
 const { getEnvironment } = require("../../config/env");
 
@@ -49,7 +49,7 @@ const signup = async (userData) => {
     await sendEmail(
       {
         email: user.email,
-        subject: "Verify your email address",
+        subject: EMAIL_SUBJECTS.email_verification,
         otp,
         userName: user.firstName,
       },
@@ -123,7 +123,7 @@ const forgotPassword = async (email) => {
   try {
     await sendEmailWithResend({
       email: user.email,
-      subject: "Password reset code",
+      subject: EMAIL_SUBJECTS.password_reset,
       otp,
       expiresInMinutes: 60,
       userName: user.firstName,

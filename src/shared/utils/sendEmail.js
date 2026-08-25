@@ -5,6 +5,7 @@ const { Resend } = require("resend");
 const { render } = require("@react-email/render");
 
 const { getEnvironment } = require("../../config/env");
+const { OTP_PURPOSE } = require("../../modules/auth/auth.constants");
 // .jsx templates use export default, so take .default off the module object.
 const PasswordResetEmail =
   require("../templates/emails/passwordResetEmail.jsx").default;
@@ -33,7 +34,7 @@ const renderEmail = async (options, purpose) => {
   let text;
 
   switch (purpose) {
-    case "password_reset":
+    case OTP_PURPOSE.password_reset:
       otpValidator(options.otp);
 
       html = await render(PasswordResetEmail(emailContent));
@@ -44,7 +45,7 @@ const renderEmail = async (options, purpose) => {
 
       break;
 
-    case "email_verification":
+    case OTP_PURPOSE.email_verification:
       otpValidator(options.otp);
 
       html = await render(signupverificationEmail(emailContent));
