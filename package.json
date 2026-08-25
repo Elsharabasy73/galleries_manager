@@ -9,8 +9,8 @@
     "test": "node --test",
     "test:email": "node scripts/sendTestEmail.js",
     "lint": "eslint .",
-    "format": "prettier --write \"{src,test,prisma}/**/*.js\" \"*.{js,json,md}\" --ignore-path .prettierignore",
-    "format:check": "prettier --check \"{src,test,prisma}/**/*.js\" \"*.{js,json,md}\" --ignore-path .prettierignore",
+    "format": "prettier --write \"{src,test,prisma}/**/*.{js,jsx}\" \"*.{js,json,md}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"{src,test,prisma}/**/*.{js,jsx}\" \"*.{js,json,md}\" --ignore-path .prettierignore",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
@@ -21,9 +21,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@babel/core": "^8.0.1",
-    "@babel/preset-react": "^8.0.1",
-    "@babel/register": "^8.0.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@react-email/render": "^2.1.0",
@@ -44,6 +41,7 @@
     "resend": "^6.22.1",
     "sharp": "^0.35.3",
     "slugify": "^1.6.9",
+    "tsx": "^4.23.12",
     "uuid": "^14.0.2"
   },
   "devDependencies": {

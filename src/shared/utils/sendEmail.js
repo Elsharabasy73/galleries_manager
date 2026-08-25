@@ -1,9 +1,13 @@
+require("../../config/jsxLoader");
+
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
 const { render } = require("@react-email/render");
 
 const { getEnvironment } = require("../../config/env");
-const PasswordResetEmail = require("../templates/emails/passwordResetEmail");
+// .jsx templates use export default, so take .default off the module object.
+const PasswordResetEmail =
+  require("../templates/emails/passwordResetEmail.jsx").default;
 
 // 1) Send email via Gmail/SMTP (Nodemailer)
 const sendEmailWithGmail = async (options) => {
@@ -44,12 +48,19 @@ const sendEmailWithResend = async (options) => {
     }
 
     const environment = getEnvironment();
+    // Precedence: explicit option > EMAIL_BANNER_URL env > bundled banner
+    // served from storage/emails/ via the app's /storage static route.
+    const bannerUrl =
+      options.bannerUrl ||
+      process.env.EMAIL_BANNER_URL ||
+      `${environment.appUrl}/storage/emails/banner.jpg`;
+
     const html = await render(
       PasswordResetEmail({
         otp: options.otp,
         expiresInMinutes: options.expiresInMinutes,
         userName: options.userName,
-        bannerUrl: process.env.EMAIL_BANNER_URL,
+        bannerUrl,
       }),
     );
     const resend = new Resend(environment.resendApiKey);
@@ -76,4 +87,3 @@ const sendEmailWithResend = async (options) => {
 };
 
 module.exports = { sendEmailWithGmail, sendEmailWithResend };
-

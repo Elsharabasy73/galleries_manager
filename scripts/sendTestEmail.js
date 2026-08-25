@@ -1,3 +1,5 @@
+require("../src/config/jsxLoader");
+
 const { sendEmailWithResend } = require("../src/shared/utils/sendEmail");
 
 const recipient = process.argv[2];

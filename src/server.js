@@ -1,3 +1,5 @@
+require("./config/jsxLoader");
+
 const createApp = require("./app");
 const { getEnvironment } = require("./config/env");
 const { connectDatabase, disconnectDatabase } = require("./config/prisma");

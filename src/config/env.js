@@ -35,6 +35,9 @@ const getEnvironment = () => {
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
     resendApiKey: requireEnvironmentVariable("RESEND_APIKEY"),
     resendFrom: requireEnvironmentVariable("RESEND_FROM"),
+    // Public origin of this API, used to build absolute URLs (e.g. email assets).
+    // Set APP_URL in production so external clients can reach served files.
+    appUrl: process.env.APP_URL || `http://localhost:${port}`,
   };
 };
 
