@@ -6,12 +6,11 @@ exports.signup = asyncHandler(async (req, res) => {
   // Exclude confirmation from the persisted user data.
   // eslint-disable-next-line no-unused-vars
   const { passwordConfirm, ...userData } = req.body;
-  const { user, token } = await authService.signup(userData);
+  const { user } = await authService.signup(userData);
 
   res.status(201).json({
     status: "success",
     data: user,
-    token,
   });
 });
 

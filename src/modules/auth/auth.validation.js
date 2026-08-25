@@ -63,7 +63,7 @@ exports.signupValidator = [
   check("role")
     .notEmpty()
     .withMessage("Role is required")
-    .isIn([ROLES.ADMIN, ROLES.GALLERY_OWNER, ROLES.CRAFTSMAN, ROLES.USER])
+    .isIn([ROLES.GALLERY_OWNER, ROLES.CRAFTSMAN, ROLES.USER])
     .withMessage("Invalid role. Allowed roles: gallery_owner, craftsman, user"),
 
   validatorMiddleware,

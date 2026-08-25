@@ -86,4 +86,12 @@ const sendEmailWithResend = async (options) => {
   }
 };
 
-module.exports = { sendEmailWithGmail, sendEmailWithResend };
+const sendEmail = async (options) => {
+  if (process.env.SENDER === "RESEND") {
+    return sendEmailWithResend(options);
+  } else {
+    return sendEmailWithGmail(options);
+  }
+};
+
+module.exports =  {sendEmail} ;

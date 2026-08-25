@@ -2,9 +2,11 @@ const bcrypt = require("bcryptjs");
 const { getPrisma } = require("../../config/prisma");
 
 const generateOtp = require("../../shared/utils/generateOTP");
-const { sendEmailWithResend } = require("../../shared/utils/sendEmail");
 const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
+const generateOTP = require("../../shared/utils/generateOTP");
+const { OTP_PURPOSE } = require("./auth.constants");
+const { sendEmail } = require("../../shared/utils/sendEmail");
 
 const prisma = getPrisma();
 
@@ -22,17 +24,34 @@ const signup = async (userData) => {
   const hashedPassword = await bcrypt.hash(userData.password, 12);
   userData.password = hashedPassword;
 
+  //generate otp
+  const otp = generateOTP();
+  //save user
   const user = await prisma.user.create({
     data: {
       ...userData,
     },
   });
-
-  const token = generateAuthToken({ userId: user.id, role: user.role });
+  //send email
+  await sendEmail({
+    email: user.email,
+    subject: "Verify your email address",
+    otp,
+    expiresInMinutes: 60,
+    userName: user.firstName,
+  });
+  //save otp
+  await prisma.userOtps.create({
+    data: {
+      userId: user.id,
+      code: otp,
+      purpose: OTP_PURPOSE.email_verification,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000), //1 hour
+    },
+  });
 
   return {
     user,
-    token,
   };
 };
 
