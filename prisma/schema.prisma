@@ -30,7 +30,7 @@ model User {
   phone     String?
   avatar    String?
   role      Role     @default(user)
-  isActive  Boolean  @default(true)
+  isActive  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -33,6 +33,8 @@ const getEnvironment = () => {
     jwtSecret: requireEnvironmentVariable("JWT_SECRET"),
     databaseUrl: requireEnvironmentVariable("DATABASE_URL"),
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
+    resendApiKey: requireEnvironmentVariable("RESEND_APIKEY"),
+    resendFrom: requireEnvironmentVariable("RESEND_FROM"),
   };
 };
 

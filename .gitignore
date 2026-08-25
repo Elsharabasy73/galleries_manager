@@ -156,4 +156,6 @@ storage/uploads/products/*
 !storage/uploads/galleries/.gitkeep
 !storage/uploads/products/.gitkeep
 
-prisma/migrations/*
+# prisma/migrations/*
+
+DESIGN.md
