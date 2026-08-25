@@ -26,6 +26,12 @@ const setGalleryAndCreator = asyncHandler(async (req, res, next) => {
     return next(new ApiError("You do not belong to a gallery", 403));
   }
 
+  if (req.params.galleryId && req.params.galleryId !== galleryId) {
+    return next(
+      new ApiError("You can only manage products in your own gallery", 403),
+    );
+  }
+
   req.body.galleryId = galleryId;
   req.body.createdById = req.user.id;
   next();
@@ -42,6 +48,25 @@ const checkProductOwnership = asyncHandler(async (req, res, next) => {
     );
   }
 
+  next();
+});
+
+const setGalleryIdFilter = asyncHandler(async (req, res, next) => {
+  const { galleryId } = req.params;
+
+  if (!galleryId) {
+    return next();
+  }
+
+  const gallery = await prisma.gallery.findUnique({
+    where: { id: galleryId },
+  });
+
+  if (!gallery) {
+    return next(new ApiError("Gallery not found", 404));
+  }
+
+  req.query.galleryId = galleryId;
   next();
 });
 
@@ -64,4 +89,5 @@ module.exports = {
 
   setGalleryAndCreator,
   checkProductOwnership,
+  setGalleryIdFilter,
 };

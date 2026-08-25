@@ -1,6 +1,6 @@
 const express = require("express");
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
 
@@ -12,6 +12,7 @@ const {
   deleteProduct,
   setGalleryAndCreator,
   checkProductOwnership,
+  setGalleryIdFilter,
 } = require("./product.controller");
 
 const {
@@ -19,7 +20,10 @@ const {
   getProductValidator,
   updateProductValidator,
   deleteProductValidator,
+  galleryIdValidator,
 } = require("./product.validation");
+
+router.use(galleryIdValidator, setGalleryIdFilter);
 
 router
   .route("/")

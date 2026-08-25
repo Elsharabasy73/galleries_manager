@@ -28,6 +28,9 @@ const {
 const employeeRouter = require("../employees/employee.routes");
 router.use("/:galleryId/employees", employeeRouter);
 
+const productRouter = require("../products/product.routes");
+router.use("/:galleryId/products", productRouter);
+
 //resizeGallaryImages must be used after updateGalleryValidator so the slug is ready
 router
   .route("/")

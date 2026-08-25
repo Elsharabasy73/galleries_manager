@@ -120,6 +120,15 @@ const productIdValidator = param("id")
     return true;
   });
 
+const galleryIdValidator = [
+  param("galleryId")
+    .optional() // absent on standalone /products routes
+    .isUUID()
+    .withMessage("Invalid gallery ID"),
+  validatorMiddleware,
+];
+
+
 const createProductValidator = [
   nameValidator,
   priceValidator,
@@ -158,4 +167,5 @@ module.exports = {
   getProductValidator,
   updateProductValidator,
   deleteProductValidator,
+  galleryIdValidator,
 };
