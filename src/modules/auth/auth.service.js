@@ -7,6 +7,7 @@ const { generateAuthToken } = require("../../shared/utils/jwt");
 const generateOTP = require("../../shared/utils/generateOTP");
 const { OTP_PURPOSE } = require("./auth.constants");
 const { sendEmail } = require("../../shared/utils/sendEmail");
+const { getEnvironment } = require("../../config/env");
 
 const prisma = getPrisma();
 
@@ -20,7 +21,6 @@ const signup = async (userData) => {
   if (existingUser) {
     throw new ApiError("Email already in use", 400);
   }
-
   const hashedPassword = await bcrypt.hash(userData.password, 12);
   userData.password = hashedPassword;
 
@@ -32,24 +32,38 @@ const signup = async (userData) => {
       ...userData,
     },
   });
-  //send email
-  await sendEmail({
-    email: user.email,
-    subject: "Verify your email address",
-    otp,
-    expiresInMinutes: 60,
-    userName: user.firstName,
-  });
+
   //save otp
-  await prisma.userOtps.create({
+  await prisma.otp.create({
     data: {
       userId: user.id,
       code: otp,
       purpose: OTP_PURPOSE.email_verification,
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000), //1 hour
+      expiresAt: new Date(
+        Date.now() + getEnvironment().codeExpiresIn * 60 * 1000,
+      ), //1 hour
     },
   });
-
+  try {
+    //send email
+    await sendEmail(
+      {
+        email: user.email,
+        subject: "Verify your email address",
+        otp,
+        userName: user.firstName,
+      },
+      "email_verification",
+    );
+  } catch {
+    await prisma.otp.deleteMany({
+      where: {
+        userId: user.id,
+        purpose: OTP_PURPOSE.email_verification,
+      },
+    });
+    throw new ApiError("Error sending email", 500);
+  }
   return {
     user,
   };

@@ -155,3 +155,34 @@ their domain contracts are defined. Domain routers are not mounted yet.
 Do not implement orders, payments, reviews, favorites, or notifications. The
 craftsman module must not expose endpoints or business logic yet; its Prisma
 model will be added after its fields are specified.
+
+## Sending emails
+
+Emails are sent via Resend and Nodemailer. The `sendEmail` function is a
+composition of the following functions:
+
+```mermaid
+                    sendEmail()
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+          Resend                  Gmail
+              │                     │
+              └──────────┬──────────┘
+                         ▼
+                    renderEmail()
+                         │
+                 ┌───────┴────────┐
+                 ▼                ▼
+          password_reset   email_verification
+                 │                │
+                 ▼                ▼
+           React Email       React Email
+                 │                │
+                 └───────┬────────┘
+                         ▼
+                    { html, text }
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+           Resend                Nodemailer

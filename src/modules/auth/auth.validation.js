@@ -42,7 +42,7 @@ exports.signupValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("password")
     .notEmpty()
@@ -75,7 +75,7 @@ exports.loginValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("password").notEmpty().withMessage("Password is required"),
 
@@ -88,7 +88,7 @@ exports.forgotPasswordValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   validatorMiddleware,
 ];
@@ -99,7 +99,7 @@ exports.verifyResetPasswordOTPValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("otp")
     .notEmpty()
@@ -118,7 +118,7 @@ exports.resetPasswordValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("password")
     .notEmpty()
