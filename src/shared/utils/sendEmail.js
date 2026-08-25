@@ -1,6 +1,9 @@
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
+const { render } = require("@react-email/render");
+
 const { getEnvironment } = require("../../config/env");
+const PasswordResetEmail = require("../templates/emails/passwordResetEmail");
 
 // 1) Send email via Gmail/SMTP (Nodemailer)
 const sendEmailWithGmail = async (options) => {
@@ -34,18 +37,28 @@ const sendEmailWithGmail = async (options) => {
 };
 
 // 2) Send email via Resend
-const getResendClient = () => new Resend(getEnvironment().resendApiKey);
-
 const sendEmailWithResend = async (options) => {
   try {
-    console.log("Sending email via Resend...");
-    console.log(options);
-    const resend = getResendClient();
+    if (!options.otp) {
+      throw new Error("A password reset OTP is required.");
+    }
+
+    const environment = getEnvironment();
+    const html = await render(
+      PasswordResetEmail({
+        otp: options.otp,
+        expiresInMinutes: options.expiresInMinutes,
+        userName: options.userName,
+        bannerUrl: process.env.EMAIL_BANNER_URL,
+      }),
+    );
+    const resend = new Resend(environment.resendApiKey);
     const { data, error } = await resend.emails.send({
-      from: getEnvironment().resendFrom,
+      from: environment.resendFrom,
       to: options.email,
       subject: options.subject,
-      html: options.html || `<p>${options.message}</p>`,
+      html,
+      text: `Your password reset code is ${options.otp}. It is valid for ${options.expiresInMinutes || 60} minutes.`,
     });
 
     if (error) {
@@ -63,5 +76,4 @@ const sendEmailWithResend = async (options) => {
 };
 
 module.exports = { sendEmailWithGmail, sendEmailWithResend };
-
 

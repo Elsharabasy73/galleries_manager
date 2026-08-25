@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const { getPrisma } = require("../../config/prisma");
 
 const generateOtp = require("../../shared/utils/generateOTP");
-const sendEmail = require("../../shared/utils/sendEmail");
+const { sendEmailWithResend } = require("../../shared/utils/sendEmail");
 const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
 
@@ -88,12 +88,14 @@ const forgotPassword = async (email) => {
   });
 
   try {
-    await sendEmail({
+    await sendEmailWithResend({
       email: user.email,
       subject: "Password reset code",
-      message: `Your password reset code is ${otp}. It is valid for 1 hour.`,
+      otp,
+      expiresInMinutes: 60,
+      userName: user.firstName,
     });
-  } catch (error) {
+  } catch {
     await prisma.user.update({
       where: {
         id: user.id,
