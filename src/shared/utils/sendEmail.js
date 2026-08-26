@@ -1,5 +1,3 @@
-require("../../config/jsxLoader");
-
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
 const { render } = require("@react-email/render");
@@ -23,7 +21,7 @@ const otpValidator = (otp) => {
   }
 };
 
-const renderEmail = async (options, purpose) => {
+const renderEmailTemplate = async (options, purpose) => {
   const emailContent = {
     otp: options.otp,
     expiresInMinutes: getEnvironment().codeExpiresIn,
@@ -62,88 +60,72 @@ const renderEmail = async (options, purpose) => {
 
   return { html, text };
 };
-// 1) Send email via Gmail/SMTP (Nodemailer)
-const sendEmailWithGmail = async (options, purpose) => {
-  try {
-    const { html, text } = await renderEmail(options, purpose);
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SENDER_HOST,
-      port: process.env.SENDER_PORT,
-      secure: process.env.SENDER_SECURE === "true",
-      auth: {
-        user: process.env.SENDER_EMAIL,
-        pass: process.env.SENDER_PASSWORD,
-      },
-    });
+const sendEmailWithGmail = async (options, purpose, emailTemplate) => {
+  const { html, text } = emailTemplate;
 
-    const mailOptions = {
-      from: `"ElShaRabasy APP" <${process.env.SENDER_EMAIL}>`,
-      to: options.email,
-      subject: options.subject,
-      html,
-      text,
-    };
+  const transporter = nodemailer.createTransport({
+    host: process.env.SENDER_HOST,
+    port: process.env.SENDER_PORT,
+    secure: process.env.SENDER_SECURE === "true",
+    auth: {
+      user: process.env.SENDER_EMAIL,
+      pass: process.env.SENDER_PASSWORD,
+    },
+  });
 
-    const info = await transporter.sendMail(mailOptions);
+  const mailOptions = {
+    from: `"ElShaRabasy APP" <${process.env.SENDER_EMAIL}>`,
+    to: options.email,
+    subject: options.subject,
+    html,
+    text,
+  };
 
-    console.log(`Email sent via Gmail: ${info.messageId}`);
-
-    return info;
-  } catch (error) {
-    console.error(error);
-
-    throw new Error(
-      "An error occurred while trying to send the email via Gmail.",
-      { cause: error },
-    );
-  }
+  const info = await transporter.sendMail(mailOptions);
+  console.log(`Email sent via Gmail: ${info.messageId}`);
+  return info;
 };
 
-// 2) Send email via Resend
-const sendEmailWithResend = async (options, purpose) => {
-  try {
-    const environment = getEnvironment();
-    const { html, text } = await renderEmail(options, purpose);
+const sendEmailWithResend = async (options, purpose, emailTemplate) => {
+  const { html, text } = emailTemplate;
 
-    // Send the email using Resend.
-    const resend = new Resend(environment.resendApiKey);
-    const { data, error } = await resend.emails.send({
-      from: environment.resendFrom,
-      to: options.email,
-      subject: options.subject,
-      html,
-      text,
-    });
+  // Send the email using Resend.
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { data, error } = await resend.emails.send({
+    from: process.env.RESEND_FROM,
+    to: options.email,
+    subject: options.subject,
+    html,
+    text,
+  });
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    console.log(`Email sent via Resend: ${data.id}`);
-    return data;
-  } catch (error) {
-    console.error(error);
-    throw new Error(
-      "An error occurred while trying to send the email via Resend.",
-      { cause: error },
-    );
+  if (error) {
+    throw new Error(error.message);
   }
+
+  console.log(`Email sent via Resend: ${data.id}`);
+  return data;
+};
+
+const providerSelector = () => {
+  if (process.env.SENDER === "RESEND") {
+    return sendEmailWithResend;
+  }
+
+  if (process.env.SENDER === "GMAIL") {
+    return sendEmailWithGmail;
+  }
+
+  throw new Error(`Invalid email sender: ${process.env.SENDER}`);
 };
 
 const sendEmail = async (options, purpose) => {
-  const providers = {
-    RESEND: sendEmailWithResend,
-    GMAIL: sendEmailWithGmail,
-  };
+  const emailTemplate = await renderEmailTemplate(options, purpose);
 
-  const provider = providers[process.env.SENDER];
+  const provider = providerSelector();
 
-  if (!provider) {
-    throw new Error(`Invalid email sender: ${process.env.SENDER}`);
-  }
-
-  return provider(options, purpose);
+  return provider(options, purpose, emailTemplate);
 };
 
 module.exports = { sendEmail };

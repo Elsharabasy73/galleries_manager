@@ -161,28 +161,41 @@ model will be added after its fields are specified.
 Emails are sent via Resend and Nodemailer. The `sendEmail` function is a
 composition of the following functions:
 
-```mermaid
                     sendEmail()
                          │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-          Resend                  Gmail
-              │                     │
-              └──────────┬──────────┘
                          ▼
-                    renderEmail()
+                  Render once
                          │
-                 ┌───────┴────────┐
-                 ▼                ▼
-          password_reset   email_verification
-                 │                │
-                 ▼                ▼
-           React Email       React Email
-                 │                │
-                 └───────┬────────┘
-                         ▼
                     { html, text }
                          │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-           Resend                Nodemailer
+                         ▼
+                Choose provider
+                   ↙         ↘
+               Resend       Gmail
+
+flowchart TD
+    A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
+
+    B -->|"await"| C["renderEmailTemplate(options, purpose)"]
+
+    C --> D{"purpose"}
+
+    D -->|"email_verification"| E["Validate OTP"]
+    D -->|"password_reset"| F["Validate OTP"]
+
+    E --> G["Render Email Verification JSX"]
+    F --> H["Render Password Reset JSX"]
+
+    G --> I["{ html, text }"]
+    H --> I
+
+    I --> J["providerSelector()"]
+
+    J -->|"SENDER = RESEND"| K["sendEmailWithResend"]
+    J -->|"SENDER = GMAIL"| L["sendEmailWithGmail"]
+
+    K --> M["Resend API"]
+    L --> N["SMTP / Gmail"]
+
+    M --> O["Email sent"]
+    N --> O

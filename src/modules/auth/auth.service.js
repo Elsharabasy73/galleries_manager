@@ -4,7 +4,6 @@ const { getPrisma } = require("../../config/prisma");
 const generateOtp = require("../../shared/utils/generateOTP");
 const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
-const generateOTP = require("../../shared/utils/generateOTP");
 const { OTP_PURPOSE, EMAIL_SUBJECTS } = require("./auth.constants");
 const { sendEmail } = require("../../shared/utils/sendEmail");
 const { getEnvironment } = require("../../config/env");
@@ -25,7 +24,9 @@ const signup = async (userData) => {
   userData.password = hashedPassword;
 
   //generate otp
-  const otp = generateOTP();
+  const otp = generateOtp();
+  const hashedOtp = await bcrypt.hash(otp, 12);
+
   //save user
   const user = await prisma.user.create({
     data: {
@@ -37,7 +38,7 @@ const signup = async (userData) => {
   await prisma.otp.create({
     data: {
       userId: user.id,
-      code: otp,
+      code: hashedOtp,
       purpose: OTP_PURPOSE.email_verification,
       expiresAt: new Date(
         Date.now() + getEnvironment().codeExpiresIn * 60 * 1000,
@@ -76,8 +77,17 @@ const login = async ({ email, password }) => {
     },
   });
 
+  //user does not exist
   if (!user) {
     throw new ApiError("Invalid email or password.", 401);
+  } else if (user && user.isactive === false) {
+    //user exist but is not active
+    //get otp form db
+    //if still time remaining 
+    //generate otp
+
+    //send email
+
   }
 
   const passwordCorrect = await bcrypt.compare(password, user.password);
