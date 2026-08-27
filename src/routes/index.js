@@ -7,6 +7,7 @@ const galleryRoutes = require("../modules/galleries/gallery.routes");
 const categoryRoutes = require("../modules/categories/category.routes");
 const employeeRoutes = require("../modules/employees/employee.routes");
 const productRoutes = require("../modules/products/product.routes");
+const wishlistRoutes = require("../modules/wishlist/wishlist.routes");
 
 router.get("/health", (req, res) => {
   res.status(200).json({
@@ -23,6 +24,7 @@ router.use("/galleries", galleryRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/employees", employeeRoutes);
+router.use("/wishlist", wishlistRoutes);
 
 
 module.exports = router;
