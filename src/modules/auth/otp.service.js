@@ -3,10 +3,11 @@ const crypto = require("node:crypto");
 const { getRedis } = require("../../config/redis");
 const ApiError = require("../../shared/utils/ApiError");
 const generateOtp = require("../../shared/utils/generateOTP");
-
-const OTP_TTL_SECONDS = 300;
-const COOLDOWN_TTL_SECONDS = 60;
-const MAX_ATTEMPTS = 5;
+const {
+  OTP_TTL_SECONDS,
+  COOLDOWN_TTL_SECONDS,
+  MAX_ATTEMPTS,
+} = require("./auth.constants");
 
 const keyOtp = (userId) => `otp:email_verification:${userId}`;
 const keyCooldown = (userId) => `otp:email_verification:cooldown:${userId}`;
@@ -115,7 +116,4 @@ const verifyVerificationOtp = async (userId, otp) => {
 module.exports = {
   requestVerificationOtp,
   verifyVerificationOtp,
-  OTP_TTL_SECONDS,
-  COOLDOWN_TTL_SECONDS,
-  MAX_ATTEMPTS,
 };

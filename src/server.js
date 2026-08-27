@@ -3,6 +3,7 @@ require("./config/jsxLoader");
 const createApp = require("./app");
 const { getEnvironment } = require("./config/env");
 const { connectDatabase, disconnectDatabase } = require("./config/prisma");
+const { disconnectRedis } = require("./config/redis");
 const logger = require("./config/logger");
 
 let server;
@@ -21,7 +22,7 @@ const shutdown = async (signal, exitCode = 0) => {
     await new Promise((resolve) => server.close(resolve));
   }
 
-  await disconnectDatabase();
+  await Promise.allSettled([disconnectDatabase(), disconnectRedis()]);
   process.exit(exitCode);
 };
 
@@ -46,6 +47,6 @@ process.on("unhandledRejection", (error) => {
 
 startServer().catch(async (error) => {
   logger.error("Failed to start server", error);
-  await disconnectDatabase();
+  await Promise.allSettled([disconnectDatabase(), disconnectRedis()]);
   process.exit(1);
 });

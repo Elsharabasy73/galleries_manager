@@ -26,6 +26,7 @@ const signup = async (userData) => {
   const hashedPassword = await bcrypt.hash(userData.password, 12);
   userData.password = hashedPassword;
 
+  userData.isActive = true;//stop the email verification process
   const user = await prisma.user.create({
     data: {
       ...userData,
@@ -33,18 +34,18 @@ const signup = async (userData) => {
   });
 
   // Auto-send verification OTP via Redis (300s TTL, 60s cooldown) immediately after creation
-  const otp = await requestVerificationOtp(user.id);
+  // const otp = await requestVerificationOtp(user.id);
 
   try {
-    await sendEmail(
-      {
-        email: user.email,
-        subject: EMAIL_SUBJECTS.email_verification,
-        otp,
-        userName: user.firstName,
-      },
-      "email_verification",
-    );
+    // await sendEmail(
+    //   {
+    //     email: user.email,
+    //     subject: EMAIL_SUBJECTS.email_verification,
+    //     otp,
+    //     userName: user.firstName,
+    //   },
+    //   "email_verification",
+    // );
   } catch {
     // Keep OTP in Redis for retry via /send-verification-otp; surface clear error
     throw new ApiError(

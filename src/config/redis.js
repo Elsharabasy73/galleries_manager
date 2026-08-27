@@ -23,8 +23,13 @@ const getRedis = () => {
 
 const disconnectRedis = async () => {
   if (redis) {
-    await redis.quit();
-    redis = undefined;
+    try {
+      await redis.quit();
+    } catch (err) {
+      console.error("[redis] error during disconnect", err.message);
+    } finally {
+      redis = undefined;
+    }
   }
 };
 

@@ -8,4 +8,16 @@ const EMAIL_SUBJECTS = {
   password_reset: "Password reset code",
 }
 
-module.exports = { OTP_PURPOSE, EMAIL_SUBJECTS }
+const OTP_TTL_SECONDS = 300;
+
+const COOLDOWN_TTL_SECONDS = 60;
+
+const MAX_ATTEMPTS = 5;
+
+module.exports = {
+  OTP_PURPOSE,
+  EMAIL_SUBJECTS,
+  OTP_TTL_SECONDS,
+  COOLDOWN_TTL_SECONDS,
+  MAX_ATTEMPTS,
+}
