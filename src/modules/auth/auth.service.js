@@ -1,16 +1,18 @@
 const bcrypt = require("bcryptjs");
-const { getPrisma } = require("../../config/prisma");
 
-const generateOtp = require("../../shared/utils/generateOTP");
+const { getPrisma } = require("../../config/prisma");
 const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
-const { OTP_PURPOSE, EMAIL_SUBJECTS } = require("./auth.constants");
+const { EMAIL_SUBJECTS, OTP_PURPOSE } = require("./auth.constants");
 const { sendEmail } = require("../../shared/utils/sendEmail");
-const { getEnvironment } = require("../../config/env");
-
-const prisma = getPrisma();
+const generateOtp = require("../../shared/utils/generateOTP");
+const {
+  requestVerificationOtp,
+  verifyVerificationOtp,
+} = require("./otp.service");
 
 const signup = async (userData) => {
+  const prisma = getPrisma();
   const existingUser = await prisma.user.findUnique({
     where: {
       email: userData.email,
@@ -20,33 +22,20 @@ const signup = async (userData) => {
   if (existingUser) {
     throw new ApiError("Email already in use", 400);
   }
+
   const hashedPassword = await bcrypt.hash(userData.password, 12);
   userData.password = hashedPassword;
 
-  //generate otp
-  const otp = generateOtp();
-  const hashedOtp = await bcrypt.hash(otp, 12);
-
-  //save user
   const user = await prisma.user.create({
     data: {
       ...userData,
     },
   });
 
-  //save otp
-  await prisma.otp.create({
-    data: {
-      userId: user.id,
-      code: hashedOtp,
-      purpose: OTP_PURPOSE.email_verification,
-      expiresAt: new Date(
-        Date.now() + getEnvironment().codeExpiresIn * 60 * 1000,
-      ), //1 hour
-    },
-  });
+  // Auto-send verification OTP via Redis (300s TTL, 60s cooldown) immediately after creation
+  const otp = await requestVerificationOtp(user.id);
+
   try {
-    //send email
     await sendEmail(
       {
         email: user.email,
@@ -57,37 +46,96 @@ const signup = async (userData) => {
       "email_verification",
     );
   } catch {
-    await prisma.otp.deleteMany({
-      where: {
-        userId: user.id,
-        purpose: OTP_PURPOSE.email_verification,
-      },
-    });
-    throw new ApiError("Error sending email", 500);
+    // Keep OTP in Redis for retry via /send-verification-otp; surface clear error
+    throw new ApiError(
+      "User created but failed to send verification email. Please request a new code via POST /api/v1/auth/send-verification-otp",
+      500,
+    );
   }
+
   return {
     user,
   };
 };
 
-const login = async ({ email, password }) => {
+const sendVerificationOtp = async (email) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
     },
   });
 
-  //user does not exist
+  if (!user) {
+    throw new ApiError("User not found", 404);
+  }
+
+  if (user.isActive) {
+    throw new ApiError("Email already verified", 400);
+  }
+
+  const otp = await requestVerificationOtp(user.id);
+
+  await sendEmail(
+    {
+      email: user.email,
+      subject: EMAIL_SUBJECTS.email_verification,
+      otp,
+      userName: user.firstName,
+    },
+    "email_verification",
+  );
+
+  return { email: user.email };
+};
+
+const verifyEmail = async ({ email, otp }) => {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError("User not found", 404);
+  }
+
+  if (user.isActive) {
+    throw new ApiError("Email already verified", 400);
+  }
+
+  await verifyVerificationOtp(user.id, otp);
+
+  const updated = await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      isActive: true,
+    },
+  });
+
+  return updated;
+};
+
+const login = async ({ email, password }) => {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
   if (!user) {
     throw new ApiError("Invalid email or password.", 401);
-  } else if (user && user.isactive === false) {
-    //user exist but is not active
-    //get otp form db
-    //if still time remaining 
-    //generate otp
+  }
 
-    //send email
-
+  if (user.isActive === false) {
+    throw new ApiError(
+      "Please verify your email before logging in. Check your inbox or request a new code via POST /api/v1/auth/send-verification-otp",
+      403,
+    );
   }
 
   const passwordCorrect = await bcrypt.compare(password, user.password);
@@ -105,6 +153,7 @@ const login = async ({ email, password }) => {
 };
 
 const forgotPassword = async (email) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -116,7 +165,6 @@ const forgotPassword = async (email) => {
   }
 
   const otp = generateOtp();
-
   const hashedOtp = await bcrypt.hash(otp, 12);
 
   await prisma.user.update({
@@ -131,13 +179,15 @@ const forgotPassword = async (email) => {
   });
 
   try {
-    await sendEmailWithResend({
-      email: user.email,
-      subject: EMAIL_SUBJECTS.password_reset,
-      otp,
-      expiresInMinutes: 60,
-      userName: user.firstName,
-    });
+    await sendEmail(
+      {
+        email: user.email,
+        subject: EMAIL_SUBJECTS.password_reset,
+        otp,
+        userName: user.firstName,
+      },
+      OTP_PURPOSE.password_reset,
+    );
   } catch {
     await prisma.user.update({
       where: {
@@ -157,6 +207,7 @@ const forgotPassword = async (email) => {
 };
 
 const verifyResetPasswordOTP = async ({ email, otp }) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -196,6 +247,7 @@ const verifyResetPasswordOTP = async ({ email, otp }) => {
 };
 
 const resetPassword = async ({ email, password }) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -237,6 +289,8 @@ const resetPassword = async ({ email, password }) => {
 
 module.exports = {
   signup,
+  sendVerificationOtp,
+  verifyEmail,
   login,
   forgotPassword,
   verifyResetPasswordOTP,

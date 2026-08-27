@@ -82,6 +82,36 @@ exports.loginValidator = [
   validatorMiddleware,
 ];
 
+exports.sendVerificationOtpValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail({ gmail_remove_dots: false }),
+
+  validatorMiddleware,
+];
+
+exports.verifyEmailValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail({ gmail_remove_dots: false }),
+
+  check("otp")
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits")
+    .isNumeric()
+    .withMessage("OTP must contain only numbers"),
+
+  validatorMiddleware,
+];
+
 exports.forgotPasswordValidator = [
   check("email")
     .notEmpty()

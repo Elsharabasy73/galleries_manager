@@ -35,6 +35,7 @@ const getEnvironment = () => {
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
     resendApiKey: requireEnvironmentVariable("RESEND_APIKEY"),
     resendFrom: requireEnvironmentVariable("RESEND_FROM"),
+    redisUrl: requireEnvironmentVariable("REDIS_URL"),
     codeExpiresIn: process.env.CODE_EXPIRES_IN || "60",
     // Public origin of this API, used to build absolute URLs (e.g. email assets).
     // Set APP_URL in production so external clients can reach served files.

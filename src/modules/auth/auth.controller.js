@@ -14,6 +14,25 @@ exports.signup = asyncHandler(async (req, res) => {
   });
 });
 
+exports.sendVerificationOtp = asyncHandler(async (req, res) => {
+  const { email } = await authService.sendVerificationOtp(req.body.email);
+
+  res.status(200).json({
+    status: "success",
+    message: `Verification code sent to ${email}`,
+  });
+});
+
+exports.verifyEmail = asyncHandler(async (req, res) => {
+  const user = await authService.verifyEmail(req.body);
+
+  res.status(200).json({
+    status: "success",
+    message: "Email verified successfully",
+    data: user,
+  });
+});
+
 exports.login = asyncHandler(async (req, res) => {
   const { user, token } = await authService.login(req.body);
 
