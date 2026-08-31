@@ -73,3 +73,12 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     token,
   });
 });
+
+exports.getMe = asyncHandler(async (req, res) => {
+  const { password, ...safeUser } = req.user;
+
+  res.status(200).json({
+    status: "success",
+    data: safeUser,
+  });
+});

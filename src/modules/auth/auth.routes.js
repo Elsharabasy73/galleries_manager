@@ -10,6 +10,7 @@ const {
   forgotPassword,
   verifyResetPasswordOTP,
   resetPassword,
+  getMe
 } = require("./auth.controller");
 
 const {
@@ -21,6 +22,10 @@ const {
   verifyResetPasswordOTPValidator,
   resetPasswordValidator,
 } = require("./auth.validation");
+
+const { protect } = require("../../middlewares/auth.middleware");
+
+router.get("/me", protect, getMe);
 
 router.post("/signup", signupValidator, signup);
 
