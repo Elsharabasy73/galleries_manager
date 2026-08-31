@@ -34,14 +34,14 @@ router.post("/verify-email", verifyEmailValidator, verifyEmail);
 
 router.post("/login", loginValidator, login);
 
-router.post("/forgotPassword", forgotPasswordValidator, forgotPassword);
+router.post("/forgot-password", forgotPasswordValidator, forgotPassword);
 
 router.post(
-  "/verifyResetPasswordOTP",
+  "/verify-reset-password-otp",
   verifyResetPasswordOTPValidator,
   verifyResetPasswordOTP,
 );
 
-router.post("/resetPassword", resetPasswordValidator, resetPassword);
+router.post("/reset-password", resetPasswordValidator, resetPassword);
 
 module.exports = router;

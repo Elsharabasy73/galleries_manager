@@ -57,6 +57,7 @@ const signup = async (userData) => {
       500,
     );
   }
+  //generate token
 
   return {
     user,

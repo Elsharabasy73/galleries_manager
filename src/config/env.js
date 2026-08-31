@@ -33,7 +33,7 @@ const getEnvironment = () => {
     jwtSecret: requireEnvironmentVariable("JWT_SECRET"),
     databaseUrl: requireEnvironmentVariable("DATABASE_URL"),
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
-    resendApiKey: requireEnvironmentVariable("RESEND_APIKEY"),
+    resendApiKey: requireEnvironmentVariable("RESEND_API_KEY"),
     resendFrom: requireEnvironmentVariable("RESEND_FROM"),
     redisUrl: requireEnvironmentVariable("REDIS_URL"),
     codeExpiresIn: process.env.CODE_EXPIRES_IN || "60",
