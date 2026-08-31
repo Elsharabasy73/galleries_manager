@@ -5,10 +5,14 @@ const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
 const { EMAIL_SUBJECTS, OTP_PURPOSE } = require("./auth.constants");
 const { sendEmail } = require("../../shared/utils/sendEmail");
-const generateOtp = require("../../shared/utils/generateOTP");
 const {
   requestVerificationOtp,
   verifyVerificationOtp,
+  requestPasswordResetOtp,
+  verifyPasswordResetOtp,
+  isPasswordResetVerified,
+  consumePasswordResetVerified,
+  clearPasswordResetOtp,
 } = require("./otp.service");
 
 const signup = async (userData) => {
@@ -165,19 +169,7 @@ const forgotPassword = async (email) => {
     throw new ApiError("User not found", 404);
   }
 
-  const otp = generateOtp();
-  const hashedOtp = await bcrypt.hash(otp, 12);
-
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      passwordResetCode: hashedOtp,
-      passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000),
-      passwordResetVerified: false,
-    },
-  });
+  const otp = await requestPasswordResetOtp(user.id);
 
   try {
     await sendEmail(
@@ -190,16 +182,7 @@ const forgotPassword = async (email) => {
       OTP_PURPOSE.password_reset,
     );
   } catch {
-    await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        passwordResetCode: null,
-        passwordResetExpires: null,
-        passwordResetVerified: false,
-      },
-    });
+    await clearPasswordResetOtp(user.id);
 
     throw new ApiError("Error sending email", 500);
   }
@@ -219,32 +202,7 @@ const verifyResetPasswordOTP = async ({ email, otp }) => {
     throw new ApiError("User not found", 404);
   }
 
-  if (!user.passwordResetCode) {
-    throw new ApiError("No password reset code", 404);
-  }
-
-  if (!user.passwordResetExpires) {
-    throw new ApiError("OTP expired", 401);
-  }
-
-  if (user.passwordResetExpires < new Date()) {
-    throw new ApiError("OTP expired", 401);
-  }
-
-  const otpCorrect = await bcrypt.compare(otp, user.passwordResetCode);
-
-  if (!otpCorrect) {
-    throw new ApiError("Invalid OTP", 401);
-  }
-
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      passwordResetVerified: true,
-    },
-  });
+  await verifyPasswordResetOtp(user.id, otp);
 };
 
 const resetPassword = async ({ email, password }) => {
@@ -259,7 +217,8 @@ const resetPassword = async ({ email, password }) => {
     throw new ApiError("User not found", 404);
   }
 
-  if (!user.passwordResetVerified) {
+  const isVerified = await isPasswordResetVerified(user.id);
+  if (!isVerified) {
     throw new ApiError("Password reset not verified", 401);
   }
 
@@ -271,11 +230,10 @@ const resetPassword = async ({ email, password }) => {
     },
     data: {
       password: hashedPassword,
-      passwordResetCode: null,
-      passwordResetExpires: null,
-      passwordResetVerified: false,
     },
   });
+
+  await consumePasswordResetVerified(user.id);
 
   const token = generateAuthToken({
     userId: updatedUser.id,
