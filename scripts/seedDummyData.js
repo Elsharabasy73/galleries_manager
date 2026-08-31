@@ -338,6 +338,60 @@ async function main() {
     }
   }
 
+  // 0) Backfill any existing galleries with missing logo/banner (e.g. manually created via POST without files or old auto-created galleries)
+  // This ensures the "most important" fields are never null — fixes the reported bug where dummy data galleries had no banner/logo.
+  if (!isDry) {
+    const broken = await prisma.gallery.findMany({
+      where: { OR: [{ logo: null }, { banner: null }, { logo: "" }, { banner: "" }] },
+    });
+    if (broken.length) {
+      console.log(`\n🩹 Backfilling ${broken.length} galleries with missing logo/banner...`);
+      for (const g of broken) {
+        const folderPath = getFolderPath("galleries", g.storageFolder || `${g.slug}-${uuidv4()}`);
+        await fs.mkdir(folderPath, { recursive: true });
+        let logoFile = g.logo;
+        let bannerFile = g.banner;
+        let storageFolder = g.storageFolder;
+        if (!storageFolder) {
+          storageFolder = `${g.slug}-${uuidv4()}`;
+        }
+        if (!logoFile) {
+          logoFile = await generatePlaceholder({
+            folderPath,
+            prefix: "logo",
+            width: 500,
+            height: 500,
+            color: "#2C2C2C",
+          });
+        }
+        if (!bannerFile) {
+          bannerFile = await generatePlaceholder({
+            folderPath,
+            prefix: "banner",
+            width: 1000,
+            height: 500,
+          });
+        }
+        let images = g.images;
+        if (!images || images.length === 0) {
+          const img = await generatePlaceholder({
+            folderPath,
+            prefix: "image-number-1",
+            width: 1000,
+            height: 500,
+            color: "#8B7355",
+          });
+          images = [img];
+        }
+        await prisma.gallery.update({
+          where: { id: g.id },
+          data: { logo: logoFile, banner: bannerFile, images, storageFolder },
+        });
+        console.log(`  ✓ backfilled ${g.name} (${g.id}) logo=${logoFile} banner=${bannerFile}`);
+      }
+    }
+  }
+
   // 1) Categories
   console.log("\n📦 Seeding categories...");
   const categoryByName = {};
@@ -588,11 +642,15 @@ async function main() {
   console.log("  Product images -> /storage/uploads/products/<folder>/<file>");
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Seed failed", e);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await disconnectDatabase();
-  });
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error("❌ Seed failed", e);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await disconnectDatabase();
+    });
+}
+
+module.exports = { main, CATEGORIES, GALLERIES, PRODUCTS };

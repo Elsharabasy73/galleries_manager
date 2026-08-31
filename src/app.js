@@ -13,7 +13,13 @@ const createApp = () => {
   app.set("query parser", "extended");
   //disable x-powered-by header for security reasons
   app.disable("x-powered-by");
-  app.use(helmet());
+ app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  })
+);
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
 app.use(

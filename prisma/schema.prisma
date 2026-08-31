@@ -58,8 +58,8 @@ model Gallery {
   city          String?
   street        String?
   logo          String?
-  images        String[]
   banner        String?
+  images        String[]
   storageFolder String?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
@@ -100,15 +100,18 @@ model Product {
   images         String[]
   slug           String
   description    String?
-  price          Decimal       @db.Decimal(10, 2)
-  compareAtPrice Decimal?      @db.Decimal(10, 2)
-  stock          Int           @default(0)
-  status         ProductStatus @default(active)
-  materials      String[]
-  dimensions     String?
-  isFeatured     Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  price           Decimal       @db.Decimal(10, 2)
+  compareAtPrice  Decimal?      @db.Decimal(10, 2)
+  stock           Int           @default(0)
+  status          ProductStatus @default(active)
+  materials       String[]
+  dimensions      String?
+  isFeatured      Boolean       @default(false)
+  ratingsAverage  Float         @default(0)
+  ratingsQuantity Int           @default(0)
+  sold            Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   gallery   Gallery  @relation("GalleryProducts", fields: [galleryId], references: [id], onDelete: Cascade)
   createdBy User     @relation("ProductCreator", fields: [createdById], references: [id], onDelete: Restrict)
