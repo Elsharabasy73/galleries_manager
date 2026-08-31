@@ -42,7 +42,7 @@ exports.signupValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("password")
     .notEmpty()
@@ -63,7 +63,7 @@ exports.signupValidator = [
   check("role")
     .notEmpty()
     .withMessage("Role is required")
-    .isIn([ROLES.ADMIN, ROLES.GALLERY_OWNER, ROLES.CRAFTSMAN, ROLES.USER])
+    .isIn([ROLES.GALLERY_OWNER, ROLES.CRAFTSMAN, ROLES.USER])
     .withMessage("Invalid role. Allowed roles: gallery_owner, craftsman, user"),
 
   validatorMiddleware,
@@ -75,9 +75,39 @@ exports.loginValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("password").notEmpty().withMessage("Password is required"),
+
+  validatorMiddleware,
+];
+
+exports.sendVerificationOtpValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail({ gmail_remove_dots: false }),
+
+  validatorMiddleware,
+];
+
+exports.verifyEmailValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("The email is required")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail({ gmail_remove_dots: false }),
+
+  check("otp")
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits")
+    .isNumeric()
+    .withMessage("OTP must contain only numbers"),
 
   validatorMiddleware,
 ];
@@ -88,7 +118,7 @@ exports.forgotPasswordValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   validatorMiddleware,
 ];
@@ -99,7 +129,7 @@ exports.verifyResetPasswordOTPValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("otp")
     .notEmpty()
@@ -118,7 +148,7 @@ exports.resetPasswordValidator = [
     .withMessage("The email is required")
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   check("password")
     .notEmpty()

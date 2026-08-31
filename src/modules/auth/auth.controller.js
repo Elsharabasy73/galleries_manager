@@ -6,12 +6,30 @@ exports.signup = asyncHandler(async (req, res) => {
   // Exclude confirmation from the persisted user data.
   // eslint-disable-next-line no-unused-vars
   const { passwordConfirm, ...userData } = req.body;
-  const { user, token } = await authService.signup(userData);
+  const { user } = await authService.signup(userData);
 
   res.status(201).json({
     status: "success",
     data: user,
-    token,
+  });
+});
+
+exports.sendVerificationOtp = asyncHandler(async (req, res) => {
+  const { email } = await authService.sendVerificationOtp(req.body.email);
+
+  res.status(200).json({
+    status: "success",
+    message: `Verification code sent to ${email}`,
+  });
+});
+
+exports.verifyEmail = asyncHandler(async (req, res) => {
+  const user = await authService.verifyEmail(req.body);
+
+  res.status(200).json({
+    status: "success",
+    message: "Email verified successfully",
+    data: user,
   });
 });
 

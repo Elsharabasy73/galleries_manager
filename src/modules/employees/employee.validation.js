@@ -37,7 +37,7 @@ const emailValidator = check("email")
   .withMessage("The email is required")
   .isEmail()
   .withMessage("Invalid email address")
-  .normalizeEmail()
+  .normalizeEmail({ gmail_remove_dots: false })
   .custom(async (value) => {
     const user = await prisma.user.findUnique({
       where: {
@@ -175,7 +175,7 @@ const updateEmployeeFieldsValidators = [
     .optional()
     .isEmail()
     .withMessage("Invalid email address")
-    .normalizeEmail()
+    .normalizeEmail({ gmail_remove_dots: false })
     .custom(async (value, { req }) => {
       const user = await prisma.user.findUnique({
         where: {

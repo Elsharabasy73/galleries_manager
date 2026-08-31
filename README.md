@@ -155,3 +155,47 @@ their domain contracts are defined. Domain routers are not mounted yet.
 Do not implement orders, payments, reviews, favorites, or notifications. The
 craftsman module must not expose endpoints or business logic yet; its Prisma
 model will be added after its fields are specified.
+
+## Sending emails
+
+Emails are sent via Resend and Nodemailer. The `sendEmail` function is a
+composition of the following functions:
+
+                    sendEmail()
+                         │
+                         ▼
+                  Render once
+                         │
+                    { html, text }
+                         │
+                         ▼
+                Choose provider
+                   ↙         ↘
+               Resend       Gmail
+
+flowchart TD
+    A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
+
+    B -->|"await"| C["renderEmailTemplate(options, purpose)"]
+
+    C --> D{"purpose"}
+
+    D -->|"email_verification"| E["Validate OTP"]
+    D -->|"password_reset"| F["Validate OTP"]
+
+    E --> G["Render Email Verification JSX"]
+    F --> H["Render Password Reset JSX"]
+
+    G --> I["{ html, text }"]
+    H --> I
+
+    I --> J["providerSelector()"]
+
+    J -->|"SENDER = RESEND"| K["sendEmailWithResend"]
+    J -->|"SENDER = GMAIL"| L["sendEmailWithGmail"]
+
+    K --> M["Resend API"]
+    L --> N["SMTP / Gmail"]
+
+    M --> O["Email sent"]
+    N --> O

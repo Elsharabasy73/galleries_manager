@@ -1,14 +1,22 @@
 const bcrypt = require("bcryptjs");
-const { getPrisma } = require("../../config/prisma");
 
-const generateOtp = require("../../shared/utils/generateOTP");
-const sendEmail = require("../../shared/utils/sendEmail");
+const { getPrisma } = require("../../config/prisma");
 const ApiError = require("../../shared/utils/ApiError");
 const { generateAuthToken } = require("../../shared/utils/jwt");
-
-const prisma = getPrisma();
+const { EMAIL_SUBJECTS, OTP_PURPOSE } = require("./auth.constants");
+const { sendEmail } = require("../../shared/utils/sendEmail");
+const {
+  requestVerificationOtp,
+  verifyVerificationOtp,
+  requestPasswordResetOtp,
+  verifyPasswordResetOtp,
+  isPasswordResetVerified,
+  consumePasswordResetVerified,
+  clearPasswordResetOtp,
+} = require("./otp.service");
 
 const signup = async (userData) => {
+  const prisma = getPrisma();
   const existingUser = await prisma.user.findUnique({
     where: {
       email: userData.email,
@@ -22,21 +30,102 @@ const signup = async (userData) => {
   const hashedPassword = await bcrypt.hash(userData.password, 12);
   userData.password = hashedPassword;
 
+  userData.isActive = true;//stop the email verification process
   const user = await prisma.user.create({
     data: {
       ...userData,
     },
   });
 
-  const token = generateAuthToken({ userId: user.id, role: user.role });
+  // Auto-send verification OTP via Redis (300s TTL, 60s cooldown) immediately after creation
+  // const otp = await requestVerificationOtp(user.id);
+
+  try {
+    // await sendEmail(
+    //   {
+    //     email: user.email,
+    //     subject: EMAIL_SUBJECTS.email_verification,
+    //     otp,
+    //     userName: user.firstName,
+    //   },
+    //   "email_verification",
+    // );
+  } catch {
+    // Keep OTP in Redis for retry via /send-verification-otp; surface clear error
+    throw new ApiError(
+      "User created but failed to send verification email. Please request a new code via POST /api/v1/auth/send-verification-otp",
+      500,
+    );
+  }
 
   return {
     user,
-    token,
   };
 };
 
+const sendVerificationOtp = async (email) => {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError("User not found", 404);
+  }
+
+  if (user.isActive) {
+    throw new ApiError("Email already verified", 400);
+  }
+
+  const otp = await requestVerificationOtp(user.id);
+
+  await sendEmail(
+    {
+      email: user.email,
+      subject: EMAIL_SUBJECTS.email_verification,
+      otp,
+      userName: user.firstName,
+    },
+    "email_verification",
+  );
+
+  return { email: user.email };
+};
+
+const verifyEmail = async ({ email, otp }) => {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError("User not found", 404);
+  }
+
+  if (user.isActive) {
+    throw new ApiError("Email already verified", 400);
+  }
+
+  await verifyVerificationOtp(user.id, otp);
+
+  const updated = await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      isActive: true,
+    },
+  });
+
+  return updated;
+};
+
 const login = async ({ email, password }) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -45,6 +134,13 @@ const login = async ({ email, password }) => {
 
   if (!user) {
     throw new ApiError("Invalid email or password.", 401);
+  }
+
+  if (user.isActive === false) {
+    throw new ApiError(
+      "Please verify your email before logging in. Check your inbox or request a new code via POST /api/v1/auth/send-verification-otp",
+      403,
+    );
   }
 
   const passwordCorrect = await bcrypt.compare(password, user.password);
@@ -62,6 +158,7 @@ const login = async ({ email, password }) => {
 };
 
 const forgotPassword = async (email) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -72,38 +169,20 @@ const forgotPassword = async (email) => {
     throw new ApiError("User not found", 404);
   }
 
-  const otp = generateOtp();
-
-  const hashedOtp = await bcrypt.hash(otp, 12);
-
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      passwordResetCode: hashedOtp,
-      passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000),
-      passwordResetVerified: false,
-    },
-  });
+  const otp = await requestPasswordResetOtp(user.id);
 
   try {
-    await sendEmail({
-      email: user.email,
-      subject: "Password reset code",
-      message: `Your password reset code is ${otp}. It is valid for 1 hour.`,
-    });
-  } catch (error) {
-    await prisma.user.update({
-      where: {
-        id: user.id,
+    await sendEmail(
+      {
+        email: user.email,
+        subject: EMAIL_SUBJECTS.password_reset,
+        otp,
+        userName: user.firstName,
       },
-      data: {
-        passwordResetCode: null,
-        passwordResetExpires: null,
-        passwordResetVerified: false,
-      },
-    });
+      OTP_PURPOSE.password_reset,
+    );
+  } catch {
+    await clearPasswordResetOtp(user.id);
 
     throw new ApiError("Error sending email", 500);
   }
@@ -112,6 +191,7 @@ const forgotPassword = async (email) => {
 };
 
 const verifyResetPasswordOTP = async ({ email, otp }) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -122,35 +202,11 @@ const verifyResetPasswordOTP = async ({ email, otp }) => {
     throw new ApiError("User not found", 404);
   }
 
-  if (!user.passwordResetCode) {
-    throw new ApiError("No password reset code", 404);
-  }
-
-  if (!user.passwordResetExpires) {
-    throw new ApiError("OTP expired", 401);
-  }
-
-  if (user.passwordResetExpires < new Date()) {
-    throw new ApiError("OTP expired", 401);
-  }
-
-  const otpCorrect = await bcrypt.compare(otp, user.passwordResetCode);
-
-  if (!otpCorrect) {
-    throw new ApiError("Invalid OTP", 401);
-  }
-
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      passwordResetVerified: true,
-    },
-  });
+  await verifyPasswordResetOtp(user.id, otp);
 };
 
 const resetPassword = async ({ email, password }) => {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -161,7 +217,8 @@ const resetPassword = async ({ email, password }) => {
     throw new ApiError("User not found", 404);
   }
 
-  if (!user.passwordResetVerified) {
+  const isVerified = await isPasswordResetVerified(user.id);
+  if (!isVerified) {
     throw new ApiError("Password reset not verified", 401);
   }
 
@@ -173,11 +230,10 @@ const resetPassword = async ({ email, password }) => {
     },
     data: {
       password: hashedPassword,
-      passwordResetCode: null,
-      passwordResetExpires: null,
-      passwordResetVerified: false,
     },
   });
+
+  await consumePasswordResetVerified(user.id);
 
   const token = generateAuthToken({
     userId: updatedUser.id,
@@ -192,6 +248,8 @@ const resetPassword = async ({ email, password }) => {
 
 module.exports = {
   signup,
+  sendVerificationOtp,
+  verifyEmail,
   login,
   forgotPassword,
   verifyResetPasswordOTP,
