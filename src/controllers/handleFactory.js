@@ -86,7 +86,7 @@ exports.getOne = (model, includeOptions) =>
       data: document,
     });
   });
-  
+
 exports.getAll = (Model, modelName = "", includeOptions = {}) => {
   return asyncHandler(async (req, res) => {
     const apiFeatures = new ApiFeatures(
@@ -96,13 +96,15 @@ exports.getAll = (Model, modelName = "", includeOptions = {}) => {
       includeOptions,
     );
     apiFeatures.search(req.query.keyword).limitFields().filter().sort();
- 
-    const documentsCount = await Model.count({ where: apiFeatures.query.where });
- 
+
+    const documentsCount = await Model.count({
+      where: apiFeatures.query.where,
+    });
+
     apiFeatures.paginate(documentsCount);
- 
+
     const documents = await apiFeatures.execute();
- 
+
     res.status(200).json({
       results: documents.length,
       paginationResult: apiFeatures.paginationResult,

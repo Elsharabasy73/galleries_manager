@@ -60,7 +60,10 @@ describe("validate middleware", () => {
 
     assert.equal(response.status, 400);
     assert.equal(response.body.status, "fail");
-    assert.equal(response.body.message, "A record with this value already exists.");
+    assert.equal(
+      response.body.message,
+      "A record with this value already exists.",
+    );
   });
 
   it("explains Prisma Client validation failures", async () => {

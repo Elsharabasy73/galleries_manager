@@ -174,7 +174,7 @@ composition of the following functions:
                Resend       Gmail
 
 flowchart TD
-    A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
+A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
 
     B -->|"await"| C["renderEmailTemplate(options, purpose)"]
 

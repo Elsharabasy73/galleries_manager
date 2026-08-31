@@ -32,10 +32,7 @@ const arabicNameValidator = check("arabicName")
   .withMessage("Too long arabic name");
 
 // Reusable category fields
-const categoryFieldsValidators = [
-  nameValidator,
-  arabicNameValidator,
-];
+const categoryFieldsValidators = [nameValidator, arabicNameValidator];
 
 // Reusable ID validator
 const categoryIdValidator = param("id")
@@ -63,10 +60,7 @@ const createCategoryValidator = [
 ];
 
 // Get one
-const getCategoryValidator = [
-  categoryIdValidator,
-  validatorMiddleware,
-];
+const getCategoryValidator = [categoryIdValidator, validatorMiddleware];
 
 // Update
 const updateCategoryValidator = [
@@ -76,10 +70,7 @@ const updateCategoryValidator = [
 ];
 
 // Delete
-const deleteCategoryValidator = [
-  categoryIdValidator,
-  validatorMiddleware,
-];
+const deleteCategoryValidator = [categoryIdValidator, validatorMiddleware];
 
 module.exports = {
   createCategoryValidator,

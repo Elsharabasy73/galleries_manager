@@ -12,13 +12,7 @@ const getStorageFolderPath = (type, folderName) => {
     throw new Error(`Invalid storage type: ${type}`);
   }
 
-  return path.join(
-    process.cwd(),
-    "storage",
-    "uploads",
-    type,
-    folderName,
-  );
+  return path.join(process.cwd(), "storage", "uploads", type, folderName);
 };
 
 // Delete the entire storage folder
@@ -48,9 +42,7 @@ const deleteStorageFiles = async (type, folderName, fileNames = []) => {
   if (!fileNames.length) return;
 
   await Promise.all(
-    fileNames.map((fileName) =>
-      deleteStorageFile(type, folderName, fileName),
-    ),
+    fileNames.map((fileName) => deleteStorageFile(type, folderName, fileName)),
   );
 };
 

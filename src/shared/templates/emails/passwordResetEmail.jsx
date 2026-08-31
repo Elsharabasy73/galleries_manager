@@ -15,7 +15,7 @@ const PasswordResetEmail = ({
   otp,
   expiresInMinutes = 60,
   userName = "there",
-  bannerUrl="https://lh3.googleusercontent.com/aida-public/AB6AXuCNsEYVEj6uSrL2NpBTmHf4rd7r49eK-eYI0gPSSYOzus3Fi8oevdAPylZvhqF4y0wbSv5s2O-pqW-AyG6_h1d7bofVZli7TtXwwkqbrTc5brtuzkcVzuE2_KoaLGckcga_I4ipDX3iWZtwP_-61_PGBvmoRJiIlgPwSq4A4xNBMdre2oop6q3KwJo8YMOaIzzOjlHCTqAseMZegCQwJRRALWEJLqXInJTW5r19jV93zlq7TqDwsTJ3",
+  bannerUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuCNsEYVEj6uSrL2NpBTmHf4rd7r49eK-eYI0gPSSYOzus3Fi8oevdAPylZvhqF4y0wbSv5s2O-pqW-AyG6_h1d7bofVZli7TtXwwkqbrTc5brtuzkcVzuE2_KoaLGckcga_I4ipDX3iWZtwP_-61_PGBvmoRJiIlgPwSq4A4xNBMdre2oop6q3KwJo8YMOaIzzOjlHCTqAseMZegCQwJRRALWEJLqXInJTW5r19jV93zlq7TqDwsTJ3",
 }) => (
   <Html lang="en">
     <Head />

@@ -21,9 +21,7 @@ const EmailVerificationEmail = ({
   <Html lang="en">
     <Head />
 
-    <Preview>
-      Your Atelier Gallery verification code is {otp}
-    </Preview>
+    <Preview>Your Atelier Gallery verification code is {otp}</Preview>
 
     <Tailwind
       config={{

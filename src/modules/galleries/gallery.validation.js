@@ -81,8 +81,8 @@ const galleryIdValidator = param("id")
   .withMessage("No id provided")
   .isUUID()
   .withMessage("Invalid gallery ID")
-  .custom(async(value, { req }) => {
-    const gallery =await prisma.gallery.findUnique({
+  .custom(async (value, { req }) => {
+    const gallery = await prisma.gallery.findUnique({
       where: {
         id: value,
       },
@@ -101,10 +101,7 @@ const createGalleryValidator = [
 ];
 
 // Get one
-const getGalleryValidator = [
-  galleryIdValidator,
-  validatorMiddleware,
-];
+const getGalleryValidator = [galleryIdValidator, validatorMiddleware];
 
 // Update
 const updateGalleryValidator = [
@@ -114,10 +111,7 @@ const updateGalleryValidator = [
 ];
 
 // Delete
-const deleteGalleryValidator = [
-  galleryIdValidator,
-  validatorMiddleware,
-];
+const deleteGalleryValidator = [galleryIdValidator, validatorMiddleware];
 
 module.exports = {
   createGalleryValidator,

@@ -13,19 +13,16 @@ const createApp = () => {
   app.set("query parser", "extended");
   //disable x-powered-by header for security reasons
   app.disable("x-powered-by");
- app.use(
-  helmet({
-    crossOriginResourcePolicy: {
-      policy: "cross-origin",
-    },
-  })
-);
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: {
+        policy: "cross-origin",
+      },
+    }),
+  );
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
-app.use(
-  "/storage",
-  express.static(path.join(__dirname, "..", "storage"))
-);
+  app.use("/storage", express.static(path.join(__dirname, "..", "storage")));
   if (process.env.NODE_ENV === "development") {
     app.use(morgan("dev"));
   }

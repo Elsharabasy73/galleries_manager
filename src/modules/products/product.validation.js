@@ -128,7 +128,6 @@ const galleryIdValidator = [
   validatorMiddleware,
 ];
 
-
 const createProductValidator = [
   nameValidator,
   priceValidator,

@@ -24,8 +24,6 @@ router
   .get(getMyWishlist)
   .post(addWishlistItemValidator, addToWishlist);
 
-router
-  .route("/:productId")
-  .delete(productIdParamValidator, removeFromWishlist);
+router.route("/:productId").delete(productIdParamValidator, removeFromWishlist);
 
 module.exports = router;

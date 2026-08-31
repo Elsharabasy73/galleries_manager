@@ -37,9 +37,7 @@ const setGalleryAndCreator = asyncHandler(async (req, res, next) => {
   next();
 });
 
-
 const checkProductOwnership = asyncHandler(async (req, res, next) => {
-
   const galleryId = await getCallerGalleryId(req.user);
 
   if (req.product.galleryId !== galleryId) {
@@ -72,7 +70,9 @@ const setGalleryIdFilter = asyncHandler(async (req, res, next) => {
 
 const createProduct = factory.createOne(prisma.product);
 
-const getAllProducts = factory.getAll(prisma.product, "product", {gallery: true});
+const getAllProducts = factory.getAll(prisma.product, "product", {
+  gallery: true,
+});
 
 const getProduct = factory.getOne(prisma.product);
 

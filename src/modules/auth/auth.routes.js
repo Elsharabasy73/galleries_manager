@@ -10,7 +10,7 @@ const {
   forgotPassword,
   verifyResetPasswordOTP,
   resetPassword,
-  getMe
+  getMe,
 } = require("./auth.controller");
 
 const {

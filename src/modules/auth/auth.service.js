@@ -247,7 +247,6 @@ const resetPassword = async ({ email, password }) => {
   };
 };
 
-
 module.exports = {
   signup,
   sendVerificationOtp,
@@ -256,5 +255,4 @@ module.exports = {
   forgotPassword,
   verifyResetPasswordOTP,
   resetPassword,
-  getMe,
 };
