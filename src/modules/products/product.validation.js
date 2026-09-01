@@ -149,10 +149,13 @@ const galleryIdValidator = [
   validatorMiddleware,
 ];
 
-const applyCreateDefaults = (req, res, next) => {
-  if (req.body.stock == null) {
-    req.body.stock = 1;
+const applyProductDefaults = (req, res, next) => {
+  if (req.method === "POST") {
+    if (req.body.stock == null) {
+      req.body.stock = 1;
+    }
   }
+
   if (req.body.compareAtPrice == null && req.body.price != null) {
     req.body.compareAtPrice = req.body.price;
   }
@@ -163,7 +166,7 @@ const applyCreateDefaults = (req, res, next) => {
 const createProductValidator = [
   ...productFields.map((field) => field()),
   validatorMiddleware,
-  applyCreateDefaults,
+  applyProductDefaults,
 ];
 
 const getProductValidator = [productIdValidator, validatorMiddleware];
@@ -173,6 +176,7 @@ const updateProductValidator = [
   productIdValidator,
   ...productFields.map((field) => field().optional()),
   validatorMiddleware,
+  applyProductDefaults,
 ];
 
 const deleteProductValidator = [productIdValidator, validatorMiddleware];
