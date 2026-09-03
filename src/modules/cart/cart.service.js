@@ -53,44 +53,50 @@ exports.addItem = async (userId, productId, quantity) => {
     throw new ApiError("Product is not available", 400);
   }
 
-  // Cart has a unique userId, so upsert creates or returns the current cart
-  const cart = await prisma.cart.upsert({
-    where: { userId },
-    update: {},
-    create: { userId },
-  });
+  // Read, check, and write the cart line inside one transaction so a stock
+  // change cannot interleave between the quantity check and the upsert.
+  // For bulletproof concurrent adds, add { isolationLevel: "Serializable" }
+  // to the $transaction options and handle the resulting P2034 conflict.
+  await prisma.$transaction(async (tx) => {
+    // Cart has a unique userId, so upsert creates or returns the current cart
+    const userCart = await tx.cart.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    });
 
-  const existingItem = await prisma.cartItem.findUnique({
-    where: {
-      cartId_productId: {
-        cartId: cart.id,
-        productId,
+    const existingItem = await tx.cartItem.findUnique({
+      where: {
+        cartId_productId: {
+          cartId: userCart.id,
+          productId,
+        },
       },
-    },
-  });
+    });
 
-  const requestedQuantity = (existingItem?.quantity ?? 0) + quantity;
+    const requestedQuantity = (existingItem?.quantity ?? 0) + quantity;
 
-  if (requestedQuantity > product.stock) {
-    throw new ApiError(
-      `Requested quantity exceeds available stock (${product.stock})`,
-      400,
-    );
-  }
+    if (requestedQuantity > product.stock) {
+      throw new ApiError(
+        `Requested quantity exceeds available stock (${product.stock})`,
+        400,
+      );
+    }
 
-  await prisma.cartItem.upsert({
-    where: {
-      cartId_productId: {
-        cartId: cart.id,
-        productId,
+    await tx.cartItem.upsert({
+      where: {
+        cartId_productId: {
+          cartId: userCart.id,
+          productId,
+        },
       },
-    },
-    update: { quantity: requestedQuantity },
-    create: {
-      cartId: cart.id,
-      productId,
-      quantity: requestedQuantity,
-    },
+      update: { quantity: requestedQuantity },
+      create: {
+        cartId: userCart.id,
+        productId,
+        quantity: requestedQuantity,
+      },
+    });
   });
 
   const updatedCart = await getMyCartQuery(userId);
@@ -118,6 +124,10 @@ exports.updateItemQuantity = async (userId, productId, quantity) => {
 
   if (!item) {
     throw new ApiError("Product is not in your cart", 404);
+  }
+
+  if (item.product.status !== "active") {
+    throw new ApiError("Product is not available", 400);
   }
 
   if (quantity > item.product.stock) {
