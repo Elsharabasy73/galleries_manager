@@ -6,7 +6,12 @@ const prisma = getPrisma();
 // Sum of live product prices x quantities, rounded to 2 decimals
 const calculateTotalPrice = (items) =>
   Number(
-    items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0).toFixed(2),
+    items
+      .reduce(
+        (sum, item) => sum + Number(item.product.price) * item.quantity,
+        0,
+      )
+      .toFixed(2),
   );
 
 // Normalize a possibly-missing cart into a stable response shape
