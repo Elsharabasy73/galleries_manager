@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const ApiError = require("../../shared/utils/ApiError");
 const { getPrisma } = require("../../config/prisma");
 const { ROLES } = require("../../shared/constants/roles");
+const { ORDER_STATUS } = require("./order.constants");
 const orderService = require("./order.service");
 
 const prisma = getPrisma();
@@ -88,7 +89,7 @@ const getOrder = asyncHandler(async (req, res) => {
 
 // PATCH /api/v1/orders/:id -> accept a pending order
 const confirmOrder = asyncHandler(async (req, res, next) => {
-  if (req.order.status !== "pending") {
+  if (req.order.status !== ORDER_STATUS.PENDING) {
     return next(new ApiError("Only pending orders can be confirmed", 400));
   }
 

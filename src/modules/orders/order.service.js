@@ -1,6 +1,7 @@
 const { getPrisma } = require("../../config/prisma");
 
 const ApiError = require("../../shared/utils/ApiError");
+const { ORDER_STATUS } = require("./order.constants");
 
 const prisma = getPrisma();
 
@@ -33,14 +34,33 @@ exports.checkoutGallery = async (userId, galleryId, data) => {
     throw new ApiError("No items from this gallery in your cart", 404);
   }
 
-  // Re-validate available stock with live product data (may have changed since added)
+  // Re-validate every line with live product data (may have changed since added).
+  // Collect all problems and report them at once so the customer can decide
+  // whether to drop the unavailable lines and retry. Nothing is created here.
+  const unavailableItems = [];
+
   for (const item of galleryItems) {
-    if (item.quantity > item.product.stock) {
-      throw new ApiError(
-        `Requested quantity for "${item.product.name}" exceeds available stock (${item.product.stock})`,
-        400,
-      );
+    if (item.product.status !== "active") {
+      unavailableItems.push({
+        productId: item.productId,
+        productName: item.product.name,
+        reason: "not_available",
+      });
+    } else if (item.quantity > item.product.stock) {
+      unavailableItems.push({
+        productId: item.productId,
+        productName: item.product.name,
+        reason: "insufficient_stock",
+        availableStock: item.product.stock,
+        requestedQuantity: item.quantity,
+      });
     }
+  }
+
+  if (unavailableItems.length > 0) {
+    throw new ApiError("Some items in your cart are no longer available", 400, {
+      unavailableItems,
+    });
   }
 
   const totalPrice = Number(
@@ -73,12 +93,44 @@ exports.checkoutGallery = async (userId, galleryId, data) => {
       include: { items: true },
     });
 
-    // Decrement stock and remove the checked-out items from the cart
+    // Decrement stock with an atomic guard: if another checkout grabbed the
+    // units after our pre-check, updateMany matches nothing and we abort with
+    // the same itemized 400. Throwing here rolls back the whole transaction,
+    // so no partial order is ever kept.
     for (const item of galleryItems) {
-      await tx.product.update({
-        where: { id: item.productId },
+      const decremented = await tx.product.updateMany({
+        where: { id: item.productId, stock: { gte: item.quantity } },
         data: { stock: { decrement: item.quantity } },
       });
+
+      if (decremented.count === 0) {
+        const fresh = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
+
+        const reason =
+          !fresh || fresh.status !== "active"
+            ? "not_available"
+            : "insufficient_stock";
+
+        throw new ApiError(
+          "Some items in your cart are no longer available",
+          400,
+          {
+            unavailableItems: [
+              {
+                productId: item.productId,
+                productName: item.product.name,
+                reason,
+                ...(reason === "insufficient_stock" && {
+                  availableStock: fresh.stock,
+                  requestedQuantity: item.quantity,
+                }),
+              },
+            ],
+          },
+        );
+      }
     }
 
     await tx.cartItem.deleteMany({
@@ -108,7 +160,7 @@ exports.getMyOrders = (userId) =>
 exports.confirmOrder = async (orderId) => {
   const updated = await prisma.order.update({
     where: { id: orderId },
-    data: { status: "accepted" },
+    data: { status: ORDER_STATUS.ACCEPTED },
     include: { items: true, gallery: true },
   });
 
