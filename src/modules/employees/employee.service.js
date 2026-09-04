@@ -7,7 +7,7 @@ const prisma = getPrisma();
 
 const createEmployee = async (employeeData) => {
   const hashedPassword = await bcrypt.hash(employeeData.password, 12);
-
+  console.log("Creating employee with data:", employeeData);
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {

@@ -79,7 +79,8 @@ const compareAtPriceValidator = check("compareAtPrice")
 const stockValidator = check("stock")
   .optional()
   .isInt({ min: 0 })
-  .withMessage("Stock must be a non-negative integer");
+  .withMessage("Stock must be a non-negative integer")
+  .toInt();
 
 const statusValidator = check("status")
   .optional()
@@ -96,10 +97,7 @@ const dimensionsValidator = check("dimensions")
   .isString()
   .withMessage("Dimensions must be a string");
 
-const isFeaturedValidator = check("isFeatured")
-  .optional()
-  .isBoolean()
-  .withMessage("isFeatured must be a boolean");
+// isFeatured removed from create/update per user request - always defaults false in Prisma
 
 // ID in the URL -> load the product, attach it to req.product
 const productIdValidator = param("id")
@@ -138,7 +136,6 @@ const createProductValidator = [
   statusValidator,
   materialsValidator,
   dimensionsValidator,
-  isFeaturedValidator,
   validatorMiddleware,
 ];
 
@@ -155,7 +152,6 @@ const updateProductValidator = [
   statusValidator,
   materialsValidator,
   dimensionsValidator,
-  isFeaturedValidator,
   validatorMiddleware,
 ];
 
