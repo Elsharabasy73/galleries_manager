@@ -70,6 +70,7 @@ const categoryField = () =>
 
 const descriptionField = () =>
   check("description")
+    .optional()
     .isLength({ max: 1000 })
     .withMessage("Too long description");
 
@@ -79,10 +80,12 @@ const compareAtPriceField = () =>
     .isFloat({ min: 0 })
     .withMessage("compareAtPrice must be a positive number");
 
-const stockValidator = check("stock")
-  .optional()
-  .isInt({ min: 0 })
-  .withMessage("Stock must be a non-negative integer");
+const stockField = () =>
+  check("stock")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Stock must be a non-negative integer")
+    .toInt();
 
 const statusField = () =>
   check("status")
@@ -102,10 +105,11 @@ const dimensionsField = () =>
     .isString()
     .withMessage("Dimensions must be a string");
 
-const isFeaturedValidator = check("isFeatured")
-  .optional()
-  .isBoolean()
-  .withMessage("isFeatured must be a boolean");
+const isFeaturedField = () =>
+  check("isFeatured")
+    .optional()
+    .isBoolean()
+    .withMessage("isFeatured must be a boolean");
 
 const productFields = [
   nameField,
@@ -147,37 +151,32 @@ const galleryIdValidator = [
   validatorMiddleware,
 ];
 
+const applyProductDefaults = (req, res, next) => {
+  if (req.method === "POST") {
+    if (req.body.stock == null) {
+      req.body.stock = 1;
+    }
+  }
 
+  if (req.body.compareAtPrice == null && req.body.price != null) {
+    req.body.compareAtPrice = req.body.price;
+  }
+  next();
+};
+
+// Create – all required fields enforced via factories, optional fields handled
 const createProductValidator = [
-  nameValidator,
-  priceValidator,
-  categoryIdValidator,
-  descriptionValidator,
-  compareAtPriceValidator,
-  stockValidator,
-  statusValidator,
-  materialsValidator,
-  dimensionsValidator,
-  isFeaturedValidator,
+  ...productFields.map((field) => field()),
   validatorMiddleware,
   applyProductDefaults,
 ];
 
 const getProductValidator = [productIdValidator, validatorMiddleware];
 
-// Update (PATCH): same rules, nothing required
+// Update (PATCH): same rules, nothing required – add .optional() to each chain
 const updateProductValidator = [
   productIdValidator,
-  nameValidator,
-  priceValidator,
-  categoryIdValidator,
-  descriptionValidator,
-  compareAtPriceValidator,
-  stockValidator,
-  statusValidator,
-  materialsValidator,
-  dimensionsValidator,
-  isFeaturedValidator,
+  ...productFields.map((field) => field().optional()),
   validatorMiddleware,
   applyProductDefaults,
 ];
