@@ -31,6 +31,7 @@ router.put("/me/password", updatePasswordValidator, updatePassword);
 // Self-delete: all roles except admin (blocked in service)
 router.delete("/me", deleteMe);
 
+
 // Admin-only: delete any user by id (must be after /me to avoid collision)
 router.delete(
   "/:id",

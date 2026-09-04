@@ -13,7 +13,27 @@ const getMyGallery = async (req) => {
   if (!gallery) {
     throw new ApiError("Gallery not found", 404);
   }
-  return gallery;
+  //count products in gallery
+  const productCount = await prisma.product.count({
+    where: {
+      galleryId: gallery.id,
+    },
+  });
+
+  //count employees in gallery
+  const employeeCount = await prisma.employee.count({
+    where: {
+      galleryId: gallery.id,
+    },
+  });
+
+  const galleryData = {
+    ...gallery,
+    productCount,
+    employeeCount,
+  };
+
+  return galleryData;
 };
 
 module.exports = {

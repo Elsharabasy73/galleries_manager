@@ -39,7 +39,11 @@ const setGalleryAndCreator = asyncHandler(async (req, res, next) => {
 
 const checkProductOwnership = asyncHandler(async (req, res, next) => {
   const galleryId = await getCallerGalleryId(req.user);
-
+  
+  if (req.use.role === ROLES.ADMIN) {
+    return next();
+  }
+  
   if (req.product.galleryId !== galleryId) {
     return next(
       new ApiError("You can only manage products in your own gallery", 403),
