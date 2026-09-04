@@ -23,6 +23,7 @@ router.get("/health", (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/galleries", galleryRoutes);
+router.use("/gallery", galleryRoutes); // alias for singular as requested {{LURL}}/api/v1/gallery/:id/products
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/employees", employeeRoutes);

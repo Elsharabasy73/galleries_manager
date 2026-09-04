@@ -8,6 +8,7 @@ const {
   createGallery,
   getAllGalleries,
   getGallery,
+  getMyGallery,
   updateGallery,
   resizeAndUpdateGalleryImages,
   deleteGallery,
@@ -44,6 +45,8 @@ router
     addOwnerId,
     createGallery,
   );
+
+  router.get("/my-gallery", protect, allowTo([ROLES.GALLERY_OWNER]), getMyGallery);
 
 router
   .route("/:id")

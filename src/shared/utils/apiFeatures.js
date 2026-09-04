@@ -21,8 +21,6 @@ class ApiFeatures {
 
     //Object.entries(queryParamsStringObj): [ [ 'phone', '010260417501' ] ]
     for (const [key, value] of Object.entries(queryParamsStringObj)) {
-      console.log("value:", value);
-      console.log("key:", key);
       if (typeof value === "object" && value !== null) {
         const operators = {};
         // Handle operators:
@@ -59,7 +57,6 @@ class ApiFeatures {
       ...this.query.where,
       ...where,
     };
-    console.log("where:", where);
     return this;
   }
 
@@ -104,6 +101,7 @@ class ApiFeatures {
   }
 
   search(keyword = "") {
+    keyword = keyword.trim().toLocaleLowerCase();
     if (keyword) {
       switch (this.modelName) {
         case "user":

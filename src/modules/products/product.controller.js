@@ -32,8 +32,50 @@ const setGalleryAndCreator = asyncHandler(async (req, res, next) => {
     );
   }
 
+  if (!req.body) req.body = {};
   req.body.galleryId = galleryId;
   req.body.createdById = req.user.id;
+  // ---- FormData coercion: only schema fields, correct types for Prisma ----
+  // Prisma expects stock Int, price/compareAtPrice Decimal, isFeatured Boolean
+  // FormData sends everything as string, so coerce here (frontend also sends only schema fields)
+  if (req.body.stock !== undefined && typeof req.body.stock === 'string') {
+    const v = parseInt(req.body.stock, 10);
+    if (!isNaN(v)) req.body.stock = v;
+    else delete req.body.stock; // fallback to default 0
+  }
+  if (req.body.price !== undefined && typeof req.body.price === 'string' && req.body.price.trim() !== '') {
+    // Decimal accepts string, keep as string but ensure numeric
+    const v = Number(req.body.price);
+    if (!isNaN(v)) req.body.price = String(v);
+    else delete req.body.price;
+  }
+  if (req.body.compareAtPrice !== undefined) {
+    if (typeof req.body.compareAtPrice === 'string' && req.body.compareAtPrice.trim() === '') delete req.body.compareAtPrice;
+    else if (typeof req.body.compareAtPrice === 'string') {
+      const v = Number(req.body.compareAtPrice);
+      if (!isNaN(v)) req.body.compareAtPrice = String(v);
+    }
+  }
+  if (req.body.isFeatured !== undefined && typeof req.body.isFeatured === 'string') {
+    if (req.body.isFeatured === 'true') req.body.isFeatured = true;
+    else if (req.body.isFeatured === 'false') req.body.isFeatured = false;
+    else delete req.body.isFeatured;
+  }
+  // non-schema guard: remove category (typo categoy) etc if accidentally sent
+  delete req.body.category;
+  delete req.body.categoy;
+  delete req.body.image;
+  delete req.body.mainImage;
+  // materials: String[] - handle JSON string vs repeated fields
+  if (req.body.materials !== undefined && typeof req.body.materials === 'string') {
+    try {
+      const parsed = JSON.parse(req.body.materials);
+      if (Array.isArray(parsed)) req.body.materials = parsed;
+    } catch {
+      // single value will be handled as array with one entry by multer repeat, keep string as array
+      if (!Array.isArray(req.body.materials)) req.body.materials = [req.body.materials];
+    }
+  }
   next();
 });
 
@@ -86,7 +128,6 @@ module.exports = {
   getProduct,
   updateProduct,
   deleteProduct,
-
   setGalleryAndCreator,
   checkProductOwnership,
   setGalleryIdFilter,

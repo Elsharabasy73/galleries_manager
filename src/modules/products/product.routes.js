@@ -3,6 +3,14 @@ const express = require("express");
 const router = express.Router({ mergeParams: true });
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
+const { uploadMixOfImages } = require("../../middlewares/uploadImage.middleware");
+
+const uploadProductImages = uploadMixOfImages([
+  { name: "mainImage", maxCount: 1 },
+  { name: "mainImageUrl", maxCount: 1 },
+  { name: "images", maxCount: 8 },
+  { name: "image", maxCount: 1 },
+]);
 
 const {
   createProduct,
@@ -31,6 +39,7 @@ router
   .post(
     protect,
     allowTo(["gallery_owner", "employee"]),
+    uploadProductImages,
     setGalleryAndCreator,
     createProductValidator,
     createProduct,
@@ -42,6 +51,7 @@ router
   .put(
     protect,
     allowTo(["gallery_owner", "employee"]),
+    uploadProductImages,
     updateProductValidator,
     checkProductOwnership,
     updateProduct,

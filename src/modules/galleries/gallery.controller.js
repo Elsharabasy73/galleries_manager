@@ -23,6 +23,8 @@ const {
   replaceImages,
 } = require("../../shared/utils/image.utils");
 
+const galleryService = require("./gallery.service");
+
 const prisma = getPrisma();
 
 const uploadgalleryImages = uploadMixOfImages([
@@ -155,6 +157,15 @@ const addOwnerId = asyncHandler(async (req, res, next) => {
   next();
 });
 
+const getMyGallery = asyncHandler(async (req, res, next) => {
+  const gallery = await galleryService.getMyGallery(req);
+
+  res.status(200).json({
+    status: "success",
+    data: gallery,
+  });
+});
+
 //@desc Create a new gallery
 //@route POST /api/v1/galleries
 //@access Private (gallery_owner)
@@ -187,6 +198,7 @@ module.exports = {
   addOwnerId,
   createGallery,
   getGallery,
+  getMyGallery,
   updateGallery,
   getAllGalleries,
   deleteGallery,

@@ -41,10 +41,9 @@ model User {
   wishlistItems    WishlistItem[] @relation("UserWishlist")
   cart             Cart?          @relation("UserCart")
   orders           Order[]        @relation("UserOrders")
-
+  otps             Otp[]          @relation("UserOtps")
 
   @@index([role])
-  otps Otp[] @relation("UserOtps")
 }
 
 model Gallery {
@@ -91,15 +90,15 @@ model Employee {
 }
 
 model Product {
-  id             String        @id @default(uuid())
-  galleryId      String
-  createdById    String
-  categoryId     String
-  name           String
-  mainImageUrl   String?
-  images         String[]
-  slug           String
-  description    String?
+  id              String        @id @default(uuid())
+  galleryId       String
+  createdById     String
+  categoryId      String
+  name            String
+  mainImageUrl    String?
+  images          String[]
+  slug            String
+  description     String?
   price           Decimal       @db.Decimal(10, 2)
   compareAtPrice  Decimal?      @db.Decimal(10, 2)
   stock           Int           @default(0)

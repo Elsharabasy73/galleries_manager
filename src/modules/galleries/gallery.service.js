@@ -1,15 +1,21 @@
-// const { getPrisma } = require("../../config/prisma");
+const { getPrisma } = require("../../config/prisma");
 // const prisma = getPrisma();
 
 
-// const createGallery = async (data) => {
-//   const gallery = await prisma.gallery.create({
-//     data: {
-//       ...data,
-//     },
-//   });
+const getMyGallery = async (req) => {
+  const prisma = getPrisma();
+  const gallery = await prisma.gallery.findUnique({
+    where: {
+      ownerId: req.user.id,
+    },
+  });
 
-//   return gallery;
-// };
+  if (!gallery) {
+    throw new ApiError("Gallery not found", 404);
+  }
+  return gallery;
+};
 
-// module.exports = { createGallery };
+module.exports = {
+  getMyGallery,
+};
