@@ -9,6 +9,8 @@ const categoryRoutes = require("../modules/categories/category.routes");
 const employeeRoutes = require("../modules/employees/employee.routes");
 const productRoutes = require("../modules/products/product.routes");
 const wishlistRoutes = require("../modules/wishlist/wishlist.routes");
+const cartRoutes = require("../modules/cart/cart.routes");
+const orderRoutes = require("../modules/orders/order.routes");
 
 router.get("/health", (req, res) => {
   res.status(200).json({
@@ -28,5 +30,7 @@ router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/employees", employeeRoutes);
 router.use("/wishlist", wishlistRoutes);
+router.use("/cart", cartRoutes);
+router.use("/orders", orderRoutes);
 
 module.exports = router;

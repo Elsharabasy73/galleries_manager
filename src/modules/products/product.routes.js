@@ -48,7 +48,7 @@ router
 router
   .route("/:id")
   .get(getProductValidator, getProduct)
-  .put(
+  .patch(
     protect,
     allowTo(["gallery_owner", "employee"]),
     uploadProductImages,

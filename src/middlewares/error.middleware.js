@@ -6,6 +6,7 @@ const sendErrorForDev = (err, res) => {
     status: err.status,
     error: err,
     message: err.message,
+    ...(err.details !== undefined && { details: err.details }),
     stack: err.stack,
   });
 };
@@ -14,6 +15,7 @@ const sendErrorForProd = (err, res) =>
   res.status(err.statusCode).json({
     status: err.status,
     message: err.message,
+    ...(err.details !== undefined && { details: err.details }),
   });
 
 const handleJsonWebInvalidSignature = () => new ApiError("Invalid token", 401);
