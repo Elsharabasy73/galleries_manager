@@ -12,6 +12,7 @@ const {
   deleteUser,
   updatePassword,
   countUsers,
+  getUsers,
 } = require("./user.controller");
 
 const {
@@ -32,14 +33,16 @@ router.put("/me/password", updatePasswordValidator, updatePassword);
 // Self-delete: all roles except admin (blocked in service)
 router.delete("/me", deleteMe);
 
-// Admin-only: delete any user by id (must be after /me to avoid collision)
+router.get("/count", allowTo([ROLES.ADMIN]), countUsers);
+
+router.get("/", allowTo([ROLES.ADMIN]), getUsers);
+
+// Admin-only: delete any user by id (must be after /me and /count to avoid collision)
 router.delete(
   "/:id",
   authorize([ROLES.ADMIN]),
   deleteUserValidator,
   deleteUser,
 );
-
-router.get("/count", allowTo([ROLES.ADMIN]), countUsers);
 
 module.exports = router;

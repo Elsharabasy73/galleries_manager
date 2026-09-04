@@ -33,6 +33,9 @@ router.use("/:galleryId/employees", employeeRouter);
 const productRouter = require("../products/product.routes");
 router.use("/:galleryId/products", productRouter);
 
+// count before :id otherwise "count" is treated as :id
+router.get("/count", countGalleries);
+
 //resizeGallaryImages must be used after updateGalleryValidator so the slug is ready
 router
   .route("/")
@@ -72,9 +75,6 @@ router
     deleteGalleryImages,
     deleteGallery,
   );
-
-//gekt number of galleries
-router.get("/count", countGalleries);
 
 
 module.exports = router;

@@ -106,9 +106,16 @@ const updatePassword = async (userId, currentPassword, newPassword) => {
   return { user: safeUser, token };
 };
 
+const countUsers = async () => {
+  const prisma = getPrisma();
+  const count = await prisma.user.count();
+  return count;
+}
+
 module.exports = {
   updateMe,
   deleteMe,
   deleteUser,
   updatePassword,
+  countUsers
 };

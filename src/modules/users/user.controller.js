@@ -1,5 +1,9 @@
 const asyncHandler = require("express-async-handler");
 const userService = require("./user.service");
+const { getPrisma } = require("../../config/prisma");
+const factory = require("../../controllers/handleFactory");
+
+const prisma = getPrisma();
 
 exports.updateMe = asyncHandler(async (req, res) => {
   const user = await userService.updateMe(req.user.id, req.body);
@@ -25,6 +29,8 @@ exports.updatePassword = asyncHandler(async (req, res) => {
   );
   res.status(200).json({ status: "success", data: user, token });
 });
+
+exports.getUsers = factory.getAll(prisma.user);
 
 exports.countUsers = asyncHandler(async (req, res) => {
   const count = await userService.countUsers();

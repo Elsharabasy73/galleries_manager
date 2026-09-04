@@ -34,6 +34,9 @@ const {
   galleryIdValidator,
 } = require("./product.validation");
 
+// count must be before /:id otherwise "count" is treated as :id
+router.get("/count", protect, allowTo([ROLES.ADMIN]), countProducts);
+
 router.use(galleryIdValidator, setGalleryIdFilter);
 
 router
@@ -66,8 +69,5 @@ router
     checkProductOwnership,
     deleteProduct,
   );
-
-//gekt number of products
-router.get("/count", allowTo([ROLES.ADMIN]), countProducts);
 
 module.exports = router;
