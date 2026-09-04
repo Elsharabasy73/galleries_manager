@@ -25,3 +25,13 @@ exports.updatePassword = asyncHandler(async (req, res) => {
   );
   res.status(200).json({ status: "success", data: user, token });
 });
+
+exports.countUsers = asyncHandler(async (req, res) => {
+  const count = await userService.countUsers();
+  res.status(200).json({
+    status: "success",
+    data: {
+      count,
+    },
+  });
+});

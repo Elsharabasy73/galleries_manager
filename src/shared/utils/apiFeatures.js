@@ -109,15 +109,15 @@ class ApiFeatures {
           this.query.where = {
             ...this.query.where,
             OR: [
-              { firstName: { contains: keyword } },
-              { lastName: { contains: keyword } },
+              { firstName: { contains: keyword, mode: "insensitive" } },
+              { lastName: { contains: keyword, mode: "insensitive" } },
             ],
           };
           break;
         default:
           this.query.where = {
             ...this.query.where,
-            name: { contains: keyword },
+            name: { contains: keyword, mode: "insensitive" },
           };
           break;
       }

@@ -13,6 +13,7 @@ const {
   resizeAndUpdateGalleryImages,
   deleteGallery,
   deleteGalleryImages,
+  countGalleries,
 } = require("./gallery.controller");
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
@@ -46,14 +47,19 @@ router
     createGallery,
   );
 
-  router.get("/my-gallery", protect, allowTo([ROLES.GALLERY_OWNER]), getMyGallery);
+router.get(
+  "/my-gallery",
+  protect,
+  allowTo([ROLES.GALLERY_OWNER]),
+  getMyGallery,
+);
 
 router
   .route("/:id")
   .get(getGalleryValidator, getGallery)
   .put(
     protect,
-    allowTo([ROLES.GALLERY_OWNER]),
+    allowTo([ROLES.ADMIN, ROLES.GALLERY_OWNER]),
     uploadgalleryImages,
     updateGalleryValidator,
     resizeAndUpdateGalleryImages,
@@ -61,10 +67,14 @@ router
   )
   .delete(
     protect,
-    allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]),
+    allowTo([ROLES.ADMIN, ROLES.GALLERY_OWNER]),
     deleteGalleryValidator,
     deleteGalleryImages,
     deleteGallery,
   );
+
+//gekt number of galleries
+router.get("/count", countGalleries);
+
 
 module.exports = router;

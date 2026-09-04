@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const { protect } = require("../../middlewares/auth.middleware");
+const { protect, allowTo } = require("../../middlewares/auth.middleware");
 const authorize = require("../../middlewares/authorization.middleware");
 const { ROLES } = require("../../shared/constants/roles");
 
@@ -11,6 +11,7 @@ const {
   deleteMe,
   deleteUser,
   updatePassword,
+  countUsers,
 } = require("./user.controller");
 
 const {
@@ -31,7 +32,6 @@ router.put("/me/password", updatePasswordValidator, updatePassword);
 // Self-delete: all roles except admin (blocked in service)
 router.delete("/me", deleteMe);
 
-
 // Admin-only: delete any user by id (must be after /me to avoid collision)
 router.delete(
   "/:id",
@@ -39,5 +39,7 @@ router.delete(
   deleteUserValidator,
   deleteUser,
 );
+
+router.get("/count", allowTo([ROLES.ADMIN]), countUsers);
 
 module.exports = router;

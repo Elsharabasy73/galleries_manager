@@ -191,6 +191,19 @@ const updateGallery = factory.updateOne(prisma.gallery);
 //@access Private (gallery_owner)
 const deleteGallery = factory.deleteOne(prisma.gallery);
 
+//@desc Get number of galleries
+//@route GET /api/v1/galleries/count
+//@access Public
+const countGalleries = asyncHandler(async (req, res) => {
+  const count = await prisma.gallery.count();
+  res.status(200).json({
+    status: "success",
+    data: {
+      count,
+    },
+  });
+});
+
 module.exports = {
   uploadgalleryImages,
   resizeGalleryImages,
@@ -203,4 +216,5 @@ module.exports = {
   getAllGalleries,
   deleteGallery,
   deleteGalleryImages,
+  countGalleries,
 };

@@ -9,6 +9,7 @@ const getMyGallery = async (req) => {
       ownerId: req.user.id,
     },
   });
+  
 
   if (!gallery) {
     throw new ApiError("Gallery not found", 404);

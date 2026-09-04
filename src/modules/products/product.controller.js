@@ -2,11 +2,12 @@ const factory = require("../../controllers/handleFactory");
 const { getPrisma } = require("../../config/prisma");
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../../shared/utils/ApiError");
+const { ROLES } = require("../../shared/constants/roles");
 
 const prisma = getPrisma();
 
 const getCallerGalleryId = async (user) => {
-  if (user.role === "gallery_owner") {
+  if (user.role === ROLES.GALLERY_OWNER) {
     const gallery = await prisma.gallery.findUnique({
       where: { ownerId: user.id },
     });
@@ -40,7 +41,7 @@ const setGalleryAndCreator = asyncHandler(async (req, res, next) => {
 const checkProductOwnership = asyncHandler(async (req, res, next) => {
   const galleryId = await getCallerGalleryId(req.user);
   
-  if (req.use.role === ROLES.ADMIN) {
+  if (req.user.role === ROLES.ADMIN) {
     return next();
   }
   
@@ -84,6 +85,18 @@ const updateProduct = factory.updateOne(prisma.product);
 
 const deleteProduct = factory.deleteOne(prisma.product);
 
+//@desc Get number of products
+//@route GET /api/v1/products/count
+//@access Public
+const countProducts = asyncHandler(async (req, res) => {
+  const count = await prisma.product.count();
+  res.status(200).json({
+    status: "success",
+    data: {
+      count,
+    },
+  });
+});
 module.exports = {
   createProduct,
   getAllProducts,
@@ -93,4 +106,5 @@ module.exports = {
   setGalleryAndCreator,
   checkProductOwnership,
   setGalleryIdFilter,
+  countProducts
 };

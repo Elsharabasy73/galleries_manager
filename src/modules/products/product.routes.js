@@ -3,8 +3,10 @@ const express = require("express");
 const router = express.Router({ mergeParams: true });
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
-const { uploadMixOfImages } = require("../../middlewares/uploadImage.middleware");
-
+const {
+  uploadMixOfImages,
+} = require("../../middlewares/uploadImage.middleware");
+const { ROLES } = require("../../shared/constants/roles");
 const uploadProductImages = uploadMixOfImages([
   { name: "mainImage", maxCount: 1 },
   { name: "mainImageUrl", maxCount: 1 },
@@ -21,6 +23,7 @@ const {
   setGalleryAndCreator,
   checkProductOwnership,
   setGalleryIdFilter,
+  countProducts,
 } = require("./product.controller");
 
 const {
@@ -38,7 +41,7 @@ router
   .get(getAllProducts)
   .post(
     protect,
-    allowTo(["gallery_owner", "employee"]),
+    allowTo([ROLES.ADMIN, ROLES.GALLERY_OWNER, ROLES.EMPLOYEE]),
     uploadProductImages,
     setGalleryAndCreator,
     createProductValidator,
@@ -48,9 +51,9 @@ router
 router
   .route("/:id")
   .get(getProductValidator, getProduct)
-  .patch(
+  .put(
     protect,
-    allowTo(["gallery_owner", "employee"]),
+    allowTo([ROLES.ADMIN, ROLES.GALLERY_OWNER, ROLES.EMPLOYEE]),
     uploadProductImages,
     updateProductValidator,
     checkProductOwnership,
@@ -58,10 +61,13 @@ router
   )
   .delete(
     protect,
-    allowTo(["gallery_owner", "employee"]),
+    allowTo([ROLES.ADMIN, ROLES.GALLERY_OWNER, ROLES.EMPLOYEE]),
     deleteProductValidator,
     checkProductOwnership,
     deleteProduct,
   );
+
+//gekt number of products
+router.get("/count", allowTo([ROLES.ADMIN]), countProducts);
 
 module.exports = router;

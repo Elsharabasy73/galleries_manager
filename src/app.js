@@ -20,7 +20,13 @@ const createApp = () => {
       },
     }),
   );
-  app.use(cors());
+  // LAN fix: allow phone origin http://192.168.x.x:5173 as well as localhost
+  app.use(
+    cors({
+      origin: true, // reflect request origin - allows any localhost/LAN origin in dev
+      credentials: true,
+    }),
+  );
   app.use(express.json({ limit: "1mb" }));
   app.use("/storage", express.static(path.join(__dirname, "..", "storage")));
   if (process.env.NODE_ENV === "development") {
