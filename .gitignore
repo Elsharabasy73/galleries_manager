@@ -159,3 +159,4 @@ storage/uploads/products/*
 # prisma/migrations/*
 
 DESIGN.md
+.github
