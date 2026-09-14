@@ -41,3 +41,8 @@ exports.countUsers = asyncHandler(async (req, res) => {
     },
   });
 });
+
+exports.updateUser = asyncHandler(async (req, res) => {
+  const user = await userService.updateUser(req.params.id, req.body);
+  res.status(200).json({ status: "success", data: user });
+});

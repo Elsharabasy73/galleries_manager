@@ -33,6 +33,6 @@ router.use("/employees", employeeRoutes);
 router.use("/wishlist", wishlistRoutes);
 router.use("/cart", cartRoutes);
 router.use("/orders", orderRoutes);
-router.use("/admin", adminRoutes);
+router.use("/admins", adminRoutes);
 
 module.exports = router;

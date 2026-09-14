@@ -3,8 +3,10 @@ const path = require("path");
 
 const { getPrisma } = require("../../config/prisma");
 const { STORAGE_DIRS, IMAGE_EXTENSIONS } = require("./admin.constants");
-
+const {ROLES} = require("../../shared/constants/roles");
 const UPLOADS_ROOT = path.join(process.cwd(), "storage", "uploads");
+const ApiError = require("../../shared/utils/ApiError");
+const slugify = require("slugify");
 
 const isImageFile = (fileName) => {
   const ext = path.extname(fileName).toLowerCase();
@@ -423,7 +425,14 @@ const updateUser = async (userId, data) => {
   if (data.role === ROLES.ADMIN) {
     throw new ApiError("Admin accounts cannot be updated via this route", 403);
   }
-  const allowedFields = ["firstName", "lastName", "email", "phone", "role"];
+  const allowedFields = [
+    "firstName",
+    "lastName",
+    "email",
+    "phone",
+    "role",
+    "isActive",
+  ];
   const updateData = {};
 
   allowedFields.forEach((field) => {

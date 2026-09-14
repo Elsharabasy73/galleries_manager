@@ -112,10 +112,65 @@ const countUsers = async () => {
   return count;
 }
 
+const updateUser = async (targetId, data) => {
+  const prisma = getPrisma();
+  const target = await prisma.user.findUnique({ where: { id: targetId } });
+  if (!target) {
+    throw new ApiError("User not found", 404);
+  }
+  const allowedFields = [
+    "firstName",
+    "lastName",
+    "email",
+    "phone",
+    "role",
+    "isActive",
+  ];
+  const updateData = {};
+  allowedFields.forEach((field) => {
+    if (data[field] !== undefined) {
+      updateData[field] = data[field];
+    }
+  });
+  // also support combined name field from frontend
+  if (data.name && !updateData.firstName && !updateData.lastName) {
+    const parts = data.name.trim().split(/\s+/);
+    updateData.firstName = parts[0];
+    updateData.lastName = parts.slice(1).join(" ") || target.lastName;
+  }
+  if (updateData.role === "admin") {
+    throw new ApiError("Cannot set role to admin", 403);
+  }
+  if (Object.keys(updateData).length === 0) {
+    throw new ApiError("No valid fields to update", 400);
+  }
+  if (updateData.email) {
+    const existing = await prisma.user.findUnique({ where: { email: updateData.email } });
+    if (existing && existing.id !== targetId) {
+      throw new ApiError("Email already in use", 400);
+    }
+  }
+  if (updateData.firstName || updateData.lastName) {
+    const firstName = updateData.firstName || target.firstName || "";
+    const lastName = updateData.lastName || target.lastName || "";
+    const fullName = `${firstName} ${lastName}`.trim();
+    if (fullName) {
+      updateData.slug = slugify(fullName, { lower: true, strict: true });
+    }
+  }
+  const updated = await prisma.user.update({
+    where: { id: targetId },
+    data: updateData,
+  });
+  const { password, ...safeUser } = updated;
+  return safeUser;
+};
+
 module.exports = {
   updateMe,
   deleteMe,
   deleteUser,
   updatePassword,
-  countUsers
+  countUsers,
+  updateUser
 };

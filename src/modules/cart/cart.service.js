@@ -19,13 +19,13 @@ const buildCartResponse = (cart) =>
   cart
     ? {
         id: cart.id,
-        items: cart.items,
+        items: groupItemsByGallery(cart.items),
         totalPrice: calculateTotalPrice(cart.items),
       }
     : {
         id: null,
         items: [],
-        totalPrice: 0,
+        totalPrice: 0, 
       };
 
 const getMyCartQuery = (userId) =>
@@ -33,11 +33,42 @@ const getMyCartQuery = (userId) =>
     where: { userId },
     include: {
       items: {
-        include: { product: true },
+        include: {
+          product: {
+            include: { gallery: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       },
     },
   });
+
+// Group cart items by gallery ID
+const groupItemsByGallery = (items) => {
+  const grouped = items.reduce((acc, item) => {
+    const galleryId = item.product.galleryId;
+    const gallery = item.product.gallery;
+
+    if (!acc[galleryId]) {
+      acc[galleryId] = {
+        gallery: {
+          id: gallery.id,
+          name: gallery.name,
+          slug: gallery.slug,
+          logo: gallery.logo,
+          city: gallery.city,
+          country: gallery.country,
+        },
+        items: [],
+      };
+    }
+
+    acc[galleryId].items.push(item);
+    return acc;
+  }, {});
+
+  return Object.values(grouped);
+};
 
 // Get the user's cart with items, product data, and computed total price
 exports.getMyCart = async (userId) => {
