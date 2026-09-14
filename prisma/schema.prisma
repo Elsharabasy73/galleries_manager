@@ -79,7 +79,6 @@ model Employee {
   userId    String   @unique
   galleryId String
   title     String?
-  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

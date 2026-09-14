@@ -53,7 +53,7 @@ router
 router.get(
   "/my-gallery",
   protect,
-  allowTo([ROLES.GALLERY_OWNER]),
+  allowTo([ROLES.GALLERY_OWNER, ROLES.EMPLOYEE]),
   getMyGallery,
 );
 

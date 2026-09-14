@@ -1,6 +1,7 @@
 const { getPrisma } = require("../../config/prisma");
 
 const ApiError = require("../../shared/utils/ApiError");
+const { ROLES } = require("../../shared/constants/roles");
 const { ORDER_STATUS } = require("./order.constants");
 
 const prisma = getPrisma();
@@ -145,7 +146,54 @@ exports.checkoutGallery = async (userId, galleryId, data) => {
   return order;
 };
 
-// List the current user's orders, newest first
+// List orders based on user role with intelligent filtering
+exports.getOrders = async (user) => {
+  let where = {};
+
+  if (user.role === ROLES.USER) {
+    // Regular users see only their own orders
+    where.userId = user.id;
+  } else if (user.role === ROLES.GALLERY_OWNER) {
+    // Gallery owners see orders for their gallery
+    const gallery = await prisma.gallery.findUnique({
+      where: { ownerId: user.id },
+    });
+    if (!gallery) {
+      throw new ApiError("Gallery not found", 404);
+    }
+    where.galleryId = gallery.id;
+  } else if (user.role === ROLES.EMPLOYEE) {
+    // Employees see orders for their gallery
+    const employee = await prisma.employee.findUnique({
+      where: { userId: user.id },
+    });
+    if (!employee) {
+      throw new ApiError("Employee not found", 404);
+    }
+    where.galleryId = employee.galleryId;
+  }
+  // Admin sees all orders (no where clause filter)
+
+  return prisma.order.findMany({
+    where,
+    include: {
+      items: true,
+      gallery: true,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+// List the current user's orders, newest first (kept for backward compatibility)
 exports.getMyOrders = (userId) =>
   prisma.order.findMany({
     where: { userId },

@@ -70,7 +70,17 @@ const checkoutGallery = asyncHandler(async (req, res) => {
   });
 });
 
-// GET /api/v1/orders -> list the current user's orders
+// GET /api/v1/orders -> list orders based on user role
+const getOrders = asyncHandler(async (req, res) => {
+  const orders = await orderService.getOrders(req.user);
+
+  res.status(200).json({
+    results: orders.length,
+    data: orders,
+  });
+});
+
+// GET /api/v1/orders -> list the current user's orders (kept for backward compatibility)
 const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await orderService.getMyOrders(req.user.id);
 
@@ -103,6 +113,7 @@ const confirmOrder = asyncHandler(async (req, res, next) => {
 
 module.exports = {
   checkoutGallery,
+  getOrders,
   getMyOrders,
   getOrder,
   confirmOrder,

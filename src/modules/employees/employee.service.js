@@ -19,6 +19,7 @@ const createEmployee = async (employeeData) => {
         phone: employeeData.phone,
         password: hashedPassword,
         role: ROLES.EMPLOYEE,
+        isActive: true,
       },
     });
 

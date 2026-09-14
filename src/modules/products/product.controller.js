@@ -40,11 +40,11 @@ const setGalleryAndCreator = asyncHandler(async (req, res, next) => {
 
 const checkProductOwnership = asyncHandler(async (req, res, next) => {
   const galleryId = await getCallerGalleryId(req.user);
-  
+
   if (req.user.role === ROLES.ADMIN) {
     return next();
   }
-  
+
   if (req.product.galleryId !== galleryId) {
     return next(
       new ApiError("You can only manage products in your own gallery", 403),
@@ -79,7 +79,9 @@ const getAllProducts = factory.getAll(prisma.product, "product", {
   gallery: true,
 });
 
-const getProduct = factory.getOne(prisma.product);
+const getProduct = factory.getOne(prisma.product, {
+  gallery: true,
+});
 
 const updateProduct = factory.updateOne(prisma.product);
 
@@ -106,5 +108,5 @@ module.exports = {
   setGalleryAndCreator,
   checkProductOwnership,
   setGalleryIdFilter,
-  countProducts
+  countProducts,
 };
