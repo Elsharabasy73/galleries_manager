@@ -111,12 +111,40 @@ const confirmOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
+// PATCH /api/v1/orders/:id/status -> update order status (gallery owner/admin)
+const updateOrderStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.body;
+
+  if (!status) {
+    return next(new ApiError("Status is required", 400));
+  }
+
+  const order = await orderService.updateOrderStatus(req.order.id, status);
+
+  res.status(200).json({
+    message: `Order status updated to ${status}`,
+    data: order,
+  });
+});
+
+// PATCH /api/v1/orders/:id/cancel -> cancel an order
+const cancelOrder = asyncHandler(async (req, res, next) => {
+  const order = await orderService.cancelOrder(req.order.id, req.user);
+
+  res.status(200).json({
+    message: "Order cancelled successfully",
+    data: order,
+  });
+});
+
 module.exports = {
   checkoutGallery,
   getOrders,
   getMyOrders,
   getOrder,
   confirmOrder,
+  updateOrderStatus,
+  cancelOrder,
   checkGalleryOrderOwnership,
   checkOrderAccess,
 };

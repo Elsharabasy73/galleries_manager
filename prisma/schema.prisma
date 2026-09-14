@@ -151,7 +151,9 @@ model Craftsman {
 enum OrderStatus {
   pending
   accepted
-  rejected
+  paid
+  delivered
+  completed
   cancelled
 }
 

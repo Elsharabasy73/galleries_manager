@@ -11,6 +11,8 @@ const {
   getOrders,
   getOrder,
   confirmOrder,
+  updateOrderStatus,
+  cancelOrder,
   checkGalleryOrderOwnership,
   checkOrderAccess,
 } = require("./order.controller");
@@ -19,6 +21,8 @@ const {
   createOrderValidator,
   getOrderValidator,
   confirmOrderValidator,
+  updateOrderStatusValidator,
+  cancelOrderValidator,
 } = require("./order.validation");
 
 // Create / read orders (role-based filtering)
@@ -42,5 +46,24 @@ router
     checkGalleryOrderOwnership,
     confirmOrder,
   );
+
+// Update order status (gallery owner/admin only)
+router.patch(
+  "/:id/status",
+  protect,
+  allowTo([ROLES.GALLERY_OWNER, ROLES.ADMIN]),
+  updateOrderStatusValidator,
+  checkGalleryOrderOwnership,
+  updateOrderStatus,
+);
+
+// Cancel an order (user who owns it, or gallery owner/admin)
+router.patch(
+  "/:id/cancel",
+  protect,
+  cancelOrderValidator,
+  checkOrderAccess,
+  cancelOrder,
+);
 
 module.exports = router;

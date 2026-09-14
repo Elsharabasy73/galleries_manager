@@ -214,3 +214,76 @@ exports.confirmOrder = async (orderId) => {
 
   return updated;
 };
+
+// Update order status with validation
+exports.updateOrderStatus = async (orderId, newStatus) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) {
+    throw new ApiError("Order not found", 404);
+  }
+
+  // Validate status transition
+  const { ORDER_TRANSITIONS } = require("./order.constants");
+  const allowedTransitions = ORDER_TRANSITIONS[order.status];
+
+  if (!allowedTransitions.includes(newStatus)) {
+    throw new ApiError(
+      `Cannot transition from ${order.status} to ${newStatus}`,
+      400,
+    );
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: { status: newStatus },
+    include: { items: true, gallery: true, user: true },
+  });
+
+  return updated;
+};
+
+// Cancel an order (can be done by user or gallery/admin)
+exports.cancelOrder = async (orderId, cancelledBy) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (!order) {
+    throw new ApiError("Order not found", 404);
+  }
+
+  // Check if order can be cancelled
+  const { ORDER_TRANSITIONS } = require("./order.constants");
+  const allowedTransitions = ORDER_TRANSITIONS[order.status];
+
+  if (!allowedTransitions.includes(ORDER_STATUS.CANCELLED)) {
+    throw new ApiError(
+      `Cannot cancel order in ${order.status} state`,
+      400,
+    );
+  }
+
+  // Restore product stock when cancelling
+  const updated = await prisma.$transaction(async (tx) => {
+    // Restore stock for all items
+    for (const item of order.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity } },
+      });
+    }
+
+    // Update order status
+    return tx.order.update({
+      where: { id: orderId },
+      data: { status: ORDER_STATUS.CANCELLED },
+      include: { items: true, gallery: true, user: true },
+    });
+  });
+
+  return updated;
+};

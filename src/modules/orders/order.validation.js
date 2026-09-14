@@ -2,6 +2,7 @@ const { check, param } = require("express-validator");
 
 const { getPrisma } = require("../../config/prisma");
 const validatorMiddleware = require("../../middlewares/validation.middleware");
+const { ORDER_STATUS } = require("./order.constants");
 
 const prisma = getPrisma();
 
@@ -72,8 +73,30 @@ const getOrderValidator = [orderIdField, validatorMiddleware];
 // Confirm an order (gallery owner/employee)
 const confirmOrderValidator = [orderIdField, validatorMiddleware];
 
+// Update order status
+const updateOrderStatusValidator = [
+  orderIdField,
+  check("status")
+    .notEmpty()
+    .withMessage("Status is required")
+    .isIn([
+      ORDER_STATUS.ACCEPTED,
+      ORDER_STATUS.PAID,
+      ORDER_STATUS.DELIVERED,
+      ORDER_STATUS.COMPLETED,
+      ORDER_STATUS.CANCELLED,
+    ])
+    .withMessage("Invalid status value"),
+  validatorMiddleware,
+];
+
+// Cancel an order
+const cancelOrderValidator = [orderIdField, validatorMiddleware];
+
 module.exports = {
   createOrderValidator,
   getOrderValidator,
   confirmOrderValidator,
+  updateOrderStatusValidator,
+  cancelOrderValidator,
 };
