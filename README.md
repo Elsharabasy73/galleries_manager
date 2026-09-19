@@ -43,7 +43,7 @@ GET /api/v1/health
 | `PORT`           | No       | HTTP port; defaults to `3000`                |
 | `DATABASE_URL`   | Yes      | PostgreSQL connection URL used by Prisma     |
 | `JWT_SECRET`     | Yes      | Secret used to sign and verify access tokens |
-| `JWT_EXPIRES_IN` | No       | Default token lifetime; defaults to `1d`     |
+| `JWT_EXPIRES_IN` | No       | Default token lifetime; defaults to `1h`     |
 
 ## Commands
 
