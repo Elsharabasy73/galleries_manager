@@ -243,10 +243,28 @@ model Otp {
   expiresAt  DateTime
   consumedAt DateTime?
   attempts   Int        @default(0)
-  createdAt  DateTime   @default(now())
+  createdAt  DateTime @default(now())
 
   user User @relation("UserOtps", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, purpose])
   @@index([expiresAt])
+}
+
+// Anonymous site-visit tracking (UUID-based, no IPs / no personal data).
+// One row per page view. Unique visitors = COUNT(DISTINCT visitorId),
+// visits = COUNT(DISTINCT sessionId).
+model PageView {
+  id        String   @id @default(uuid())
+  visitorId String
+  sessionId String
+  userId    String?
+  path      String
+  referrer  String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+  @@index([visitorId])
 }
