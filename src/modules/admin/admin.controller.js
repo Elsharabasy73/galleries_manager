@@ -38,5 +38,5 @@ const updateUser = asyncHandler(async (req, res) => {
 module.exports = {
   getImageStats,
   getImageOrphans,
-  updateUser
+  updateUser,
 };

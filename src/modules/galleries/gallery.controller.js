@@ -157,9 +157,9 @@ const addOwnerId = asyncHandler(async (req, res, next) => {
   next();
 });
 
-const getMyGallery = asyncHandler(async (req, res, next) => {
+const getMyGallery = asyncHandler(async (req, res) => {
   const gallery = await galleryService.getMyGallery(req);
-  
+
   res.status(200).json({
     status: "success",
     data: gallery,

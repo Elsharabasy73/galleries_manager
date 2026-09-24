@@ -18,9 +18,11 @@ const getPrisma = () => {
 };
 
 const connectDatabase = async () => {
-  await getPrisma().$connect().then(() => {
-    console.log("Database connected");
-  });
+  await getPrisma()
+    .$connect()
+    .then(() => {
+      console.log("Database connected");
+    });
 };
 
 const disconnectDatabase = async () => {

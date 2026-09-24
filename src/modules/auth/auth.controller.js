@@ -4,7 +4,7 @@ const authService = require("./auth.service");
 
 exports.signup = asyncHandler(async (req, res) => {
   // Exclude confirmation from the persisted user data.
-  // eslint-disable-next-line no-unused-vars
+
   const { passwordConfirm, ...userData } = req.body;
   const { user } = await authService.signup(userData);
 
@@ -75,7 +75,6 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 });
 
 exports.getMe = asyncHandler(async (req, res) => {
-  // eslint-disable-next-line no-unused-vars
   const { password, ...safeUser } = req.user;
 
   res.status(200).json({

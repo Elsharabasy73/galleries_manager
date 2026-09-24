@@ -23,7 +23,7 @@ describe("passwordResetEmail template", () => {
 
     assert.ok(html.includes("123456"));
     assert.ok(html.includes("Your password reset code is 123456"));
-    assert.ok(html.includes("Hi Sara,"));
+    assert.ok(html.includes("Hello, Sara,"));
     assert.ok(html.includes("expires in 30 minutes"));
     assert.ok(
       html.includes('src="https://example.com/banner.jpg"'),
@@ -47,7 +47,9 @@ describe("passwordResetEmail template", () => {
   });
 
   it("omits the banner image when no bannerUrl is given", async () => {
-    const html = await render(PasswordResetEmail({ otp: "111111" }));
+    const html = await render(
+      PasswordResetEmail({ otp: "111111", bannerUrl: null }),
+    );
 
     assert.ok(!html.includes("<img"), "no img tag should be rendered");
   });

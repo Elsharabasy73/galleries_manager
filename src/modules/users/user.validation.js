@@ -93,17 +93,17 @@ const updateUserValidator = [
     .optional()
     .isLength({ min: 2 })
     .withMessage("Too short last name"),
-  check("name")
-    .optional()
-    .isLength({ min: 3 })
-    .withMessage("Too short name"),
+  check("name").optional().isLength({ min: 3 }).withMessage("Too short name"),
   check("email").optional().isEmail().withMessage("Invalid email"),
   check("phone").optional().isString(),
   check("role")
     .optional()
     .isIn(["customer", "gallery_owner", "employee"])
     .withMessage("Role cannot be admin"),
-  check("isActive").optional().isBoolean().withMessage("isActive must be boolean"),
+  check("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("isActive must be boolean"),
   validate,
 ];
 

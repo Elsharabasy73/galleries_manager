@@ -455,7 +455,7 @@ async function main() {
     const adminEmail = "admin@galleries.test";
     let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
     if (!admin) {
-      admin = await prisma.user.create({
+      await prisma.user.create({
         data: {
           email: adminEmail,
           password: hashed,

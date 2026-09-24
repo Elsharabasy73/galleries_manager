@@ -25,7 +25,7 @@ const buildCartResponse = (cart) =>
     : {
         id: null,
         items: [],
-        totalPrice: 0, 
+        totalPrice: 0,
       };
 
 const getMyCartQuery = (userId) =>

@@ -41,7 +41,6 @@ const updateMe = async (userId, data) => {
     data: updateData,
   });
 
-  // eslint-disable-next-line no-unused-vars
   const { password, ...safeUser } = updated;
   return safeUser;
 };
@@ -101,7 +100,6 @@ const updatePassword = async (userId, currentPassword, newPassword) => {
 
   const token = generateAuthToken({ userId: updated.id, role: updated.role });
 
-  // eslint-disable-next-line no-unused-vars
   const { password, ...safeUser } = updated;
   return { user: safeUser, token };
 };
@@ -110,7 +108,7 @@ const countUsers = async () => {
   const prisma = getPrisma();
   const count = await prisma.user.count();
   return count;
-}
+};
 
 const updateUser = async (targetId, data) => {
   const prisma = getPrisma();
@@ -145,7 +143,9 @@ const updateUser = async (targetId, data) => {
     throw new ApiError("No valid fields to update", 400);
   }
   if (updateData.email) {
-    const existing = await prisma.user.findUnique({ where: { email: updateData.email } });
+    const existing = await prisma.user.findUnique({
+      where: { email: updateData.email },
+    });
     if (existing && existing.id !== targetId) {
       throw new ApiError("Email already in use", 400);
     }
@@ -172,5 +172,5 @@ module.exports = {
   deleteUser,
   updatePassword,
   countUsers,
-  updateUser
+  updateUser,
 };

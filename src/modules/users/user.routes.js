@@ -40,12 +40,7 @@ router.get("/count", allowTo([ROLES.ADMIN]), countUsers);
 router.get("/", allowTo([ROLES.ADMIN]), getUsers);
 
 // Admin-only: update any user by id - allowed fields only, role cannot be admin
-router.patch(
-  "/:id",
-  authorize([ROLES.ADMIN]),
-  updateUserValidator,
-  updateUser,
-);
+router.patch("/:id", authorize([ROLES.ADMIN]), updateUserValidator, updateUser);
 
 // Admin-only: delete any user by id (must be after /me and /count to avoid collision)
 router.delete(

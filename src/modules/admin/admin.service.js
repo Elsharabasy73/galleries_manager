@@ -3,7 +3,7 @@ const path = require("path");
 
 const { getPrisma } = require("../../config/prisma");
 const { STORAGE_DIRS, IMAGE_EXTENSIONS } = require("./admin.constants");
-const {ROLES} = require("../../shared/constants/roles");
+const { ROLES } = require("../../shared/constants/roles");
 const UPLOADS_ROOT = path.join(process.cwd(), "storage", "uploads");
 const ApiError = require("../../shared/utils/ApiError");
 const slugify = require("slugify");
@@ -459,7 +459,6 @@ const updateUser = async (userId, data) => {
     data: updateData,
   });
 
-  // eslint-disable-next-line no-unused-vars
   const { password, ...safeUser } = user;
   return safeUser;
 };

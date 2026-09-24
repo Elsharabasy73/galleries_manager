@@ -76,5 +76,4 @@ router
     deleteGallery,
   );
 
-
 module.exports = router;

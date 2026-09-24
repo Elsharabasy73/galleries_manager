@@ -246,7 +246,7 @@ exports.updateOrderStatus = async (orderId, newStatus) => {
 };
 
 // Cancel an order (can be done by user or gallery/admin)
-exports.cancelOrder = async (orderId, cancelledBy) => {
+exports.cancelOrder = async (orderId) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { items: true },
@@ -261,10 +261,7 @@ exports.cancelOrder = async (orderId, cancelledBy) => {
   const allowedTransitions = ORDER_TRANSITIONS[order.status];
 
   if (!allowedTransitions.includes(ORDER_STATUS.CANCELLED)) {
-    throw new ApiError(
-      `Cannot cancel order in ${order.status} state`,
-      400,
-    );
+    throw new ApiError(`Cannot cancel order in ${order.status} state`, 400);
   }
 
   // Restore product stock when cancelling

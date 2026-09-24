@@ -4,7 +4,11 @@ const router = express.Router();
 
 const { protect, allowTo } = require("../../middlewares/auth.middleware");
 const { ROLES } = require("../../shared/constants/roles");
-const { getImageStats, getImageOrphans, updateUser } = require("./admin.controller");
+const {
+  getImageStats,
+  getImageOrphans,
+  updateUser,
+} = require("./admin.controller");
 const {
   getImageStatsValidator,
   getImageOrphansValidator,

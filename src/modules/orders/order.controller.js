@@ -128,7 +128,7 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
 });
 
 // PATCH /api/v1/orders/:id/cancel -> cancel an order
-const cancelOrder = asyncHandler(async (req, res, next) => {
+const cancelOrder = asyncHandler(async (req, res) => {
   const order = await orderService.cancelOrder(req.order.id, req.user);
 
   res.status(200).json({
