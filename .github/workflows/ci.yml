@@ -116,6 +116,15 @@ jobs:
             sudo apt-get install -y redis-server
             sudo systemctl enable redis-server
             sudo systemctl start redis-server
+
+            # 7. Create swap file for memory-intensive operations (npm install)
+            if [ ! -f /swapfile ]; then
+              sudo fallocate -l 2G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+              echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+            fi
           EOF
 
       - name: Install dependencies, run Prisma, and restart service
