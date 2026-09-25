@@ -50,3 +50,4 @@ startServer().catch(async (error) => {
   await Promise.allSettled([disconnectDatabase(), disconnectRedis()]);
   process.exit(1);
 });
+//test ci cd
