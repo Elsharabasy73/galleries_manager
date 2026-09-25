@@ -86,6 +86,17 @@ jobs:
       - name: Checkout (compose + deploy script)
         uses: actions/checkout@v4
 
+      - name: Prepare deployment directory
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          script: |
+            set -e
+            sudo install -d -m 0755 -o "$(id -un)" -g "$(id -gn)" /opt/galleries_manager
+
       - name: Copy stack files to EC2
         uses: appleboy/scp-action@v1
         with:
