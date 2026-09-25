@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   validate-and-test:
@@ -27,7 +27,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: "npm"
 
       - name: 3. Install dependencies (Clean Install)
         run: npm ci
@@ -43,3 +43,105 @@ jobs:
 
       - name: 7. Run automated test suite
         run: npm test
+
+  # -------------------------------------------------
+  # CD Job – Deploy to EC2 (runs after CI succeeds)
+  # -------------------------------------------------
+
+  deploy-to-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: validate-and-test # ensures CI passed before deployment
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_FROM: ${{ secrets.RESEND_FROM }}
+    steps:
+      - name: Checkout repository (again for deployment)
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key for remote access
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/medo_production.pem
+          chmod 600 ~/.ssh/medo_production.pem
+          ssh-keyscan -H $(echo $EC2_HOST | cut -d'@' -f2) >> ~/.ssh/known_hosts
+
+      - name: Install rsync (usually pre‑installed)
+        run: sudo apt-get update && sudo apt-get install -y rsync
+
+      - name: Upload backend code to EC2
+        run: |
+          rsync -avz \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.env' \
+            --exclude 'test' \
+            --exclude 'coverage' \
+            --exclude 'logs' \
+            --exclude '*.log' \
+            -e "ssh -i ~/.ssh/medo_production.pem" \
+            ./ $EC2_HOST:~/galleries_manager
+
+      - name: Provision server (Node.js + Redis)
+        run: |
+          ssh -i ~/.ssh/medo_production.pem $EC2_HOST << 'EOF'
+            set -e
+
+            # 1. Update the OS packages (Amazon Linux 2023 uses dnf)
+            sudo dnf update -y
+
+            # 2. Install nvm (Node Version Manager)
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+            # 3. Load nvm into the current shell
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # 4. Install and activate Node.js v22
+            nvm install 22
+            nvm alias default 22
+            nvm use 22
+
+            # 5. Verify
+            node -v
+            npm -v
+
+            # 6. Install Redis
+            sudo dnf install -y redis6
+            sudo systemctl enable redis6
+            sudo systemctl start redis6
+          EOF
+
+      - name: Install dependencies, run Prisma, and restart service
+        run: |
+          ssh -i ~/.ssh/medo_production.pem $EC2_HOST << 'EOF'
+            set -e
+
+            # Load nvm (not loaded by default in non-interactive SSH)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            cd ~/galleries_manager
+
+            # 1. Install production dependencies only
+            npm ci --omit=dev
+
+            # 2. Generate Prisma Client (required before the app can start)
+            npx prisma generate
+
+            # 3. Run database migrations (applies any new schema changes)
+            npx prisma migrate deploy
+
+            # 4. Restart the application service
+            sudo systemctl daemon-reload
+            sudo systemctl restart galleries_manager.service
+            sudo systemctl status galleries_manager.service --no-pager
+          EOF
+
+      # Next: deploy frontend and set up Caddy.
