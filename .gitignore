@@ -160,3 +160,6 @@ storage/uploads/products/*
 
 DESIGN.md
 .github/agents/
+
+# Local-only deployment learning notes
+EC2_DEPLOYMENT_NOTES.md
