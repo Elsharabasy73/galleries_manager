@@ -93,8 +93,8 @@ jobs:
           ssh -i ~/.ssh/medo_production.pem $EC2_HOST << 'EOF'
             set -e
 
-            # 1. Update the OS packages (Amazon Linux 2023 uses dnf)
-            sudo dnf update -y
+            # 1. Update the OS packages (Ubuntu uses apt)
+            sudo apt-get update -y
 
             # 2. Install nvm (Node Version Manager)
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -113,9 +113,9 @@ jobs:
             npm -v
 
             # 6. Install Redis
-            sudo dnf install -y redis6
-            sudo systemctl enable redis6
-            sudo systemctl start redis6
+            sudo apt-get install -y redis-server
+            sudo systemctl enable redis-server
+            sudo systemctl start redis-server
           EOF
 
       - name: Install dependencies, run Prisma, and restart service
