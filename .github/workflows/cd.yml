@@ -78,9 +78,10 @@ jobs:
     needs: build-and-push
     # Manual runs skip the build job, so run when it succeeded or was skipped.
     if: ${{ always() && (needs.build-and-push.result == 'success' || github.event_name == 'workflow_dispatch') }}
-    environment: production
+    environment:
+      name: production
     env:
-      IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.tag || inputs.image_tag }}
+      IMAGE: ghcr.io/${{ github.repository }}:${{ needs.build-and-push.outputs.tag || inputs.image_tag || 'latest' }}
     steps:
       - name: Checkout (compose + deploy script)
         uses: actions/checkout@v4
