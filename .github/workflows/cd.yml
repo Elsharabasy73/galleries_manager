@@ -22,7 +22,6 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -41,6 +40,10 @@ jobs:
         id: tag
         run: echo "value=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
+      - name: Compute lowercase image name
+        id: image_name
+        run: echo "value=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -55,7 +58,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.value }}
           tags: |
             type=raw,value=${{ steps.tag.outputs.value }}
             type=raw,value=latest
@@ -80,11 +83,15 @@ jobs:
     if: ${{ always() && (needs.build-and-push.result == 'success' || github.event_name == 'workflow_dispatch') }}
     environment:
       name: production
-    env:
-      IMAGE: ghcr.io/${{ github.repository }}:${{ needs.build-and-push.outputs.tag || inputs.image_tag || 'latest' }}
     steps:
       - name: Checkout (compose + deploy script)
         uses: actions/checkout@v4
+
+      - name: Compute lowercase deployment image
+        id: image
+        env:
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.tag || inputs.image_tag || 'latest' }}
+        run: echo "value=ghcr.io/${GITHUB_REPOSITORY,,}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Prepare deployment directory
         uses: appleboy/ssh-action@v1
@@ -112,7 +119,7 @@ jobs:
       - name: Run deploy on EC2
         uses: appleboy/ssh-action@v1
         env:
-          IMAGE: ${{ env.IMAGE }}
+          IMAGE: ${{ steps.image.outputs.value }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
