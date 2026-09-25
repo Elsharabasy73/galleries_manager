@@ -21,7 +21,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json prisma.config.js ./
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public" npx prisma generate
 
 # ---------- runner: production-only deps + app source ----------
 FROM node:${NODE_VERSION} AS runner
