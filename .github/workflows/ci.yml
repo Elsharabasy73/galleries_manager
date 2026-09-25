@@ -154,7 +154,56 @@ jobs:
 
             # 3. Run database migrations (applies any new schema changes)
             npx prisma migrate deploy
+          EOF
 
+      - name: Setup systemd service and restart app
+        run: |
+          ssh -i ~/.ssh/medo_production.pem $EC2_HOST << 'EOF'
+            set -e
+
+            # Load nvm to get node path
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            NODE_PATH=$(which node)
+
+            # Create systemd service file
+            sudo tee /etc/systemd/system/galleries_manager.service > /dev/null << SERVICE
+          [Unit]
+          Description=Galleries Manager API
+          After=network.target redis-server.service
+
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/home/ubuntu/galleries_manager
+          ExecStart=${NODE_PATH} /home/ubuntu/galleries_manager/src/index.js
+          Restart=always
+          RestartSec=10
+          Environment=NODE_ENV=production
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+            # Create environment file for the service
+            sudo tee /etc/galleries_manager.env > /dev/null << ENVFILE
+          DATABASE_URL=${DATABASE_URL}
+          JWT_SECRET=${JWT_SECRET}
+          REDIS_URL=${REDIS_URL}
+          RESEND_API_KEY=${RESEND_API_KEY}
+          RESEND_FROM=${RESEND_FROM}
+          ENVFILE
+
+            # Update service to use environment file
+            sudo sed -i '/Environment=/a EnvironmentFile=/etc/galleries_manager.env' /etc/systemd/system/galleries_manager.service
+
+            # Enable and restart the service
+            sudo systemctl daemon-reload
+            sudo systemctl enable galleries_manager.service
+            sudo systemctl restart galleries_manager.service
+
+            # Show status
+            sudo systemctl status galleries_manager.service --no-pager
           EOF
 
       # Next: deploy frontend and set up Caddy.
