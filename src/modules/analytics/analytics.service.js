@@ -14,7 +14,9 @@ const GROUP_TRUNC = Object.freeze({
 const isBot = (userAgent) => BOT_UA_PATTERN.test(userAgent || "");
 
 const isInternalPath = (path) =>
-  INTERNAL_PATH_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  INTERNAL_PATH_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
 
 const normalizePath = (path) => {
   let p = String(path || "/").slice(0, 500);
@@ -24,7 +26,14 @@ const normalizePath = (path) => {
 
 // Store one anonymous page view. Returns true when stored, false when skipped.
 // Never throws — tracking must never break the site or leak errors.
-const trackPageView = async ({ visitorId, sessionId, userId, path, referrer, userAgent }) => {
+const trackPageView = async ({
+  visitorId,
+  sessionId,
+  userId,
+  path,
+  referrer,
+  userAgent,
+}) => {
   const normalizedPath = normalizePath(path);
   if (isBot(userAgent)) return false;
   if (isInternalPath(normalizedPath)) return false;
@@ -45,7 +54,9 @@ const trackPageView = async ({ visitorId, sessionId, userId, path, referrer, use
 
 const parseRange = (from, to) => {
   const end = to ? new Date(to) : new Date();
-  const start = from ? new Date(from) : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const start = from
+    ? new Date(from)
+    : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     throw new Error("Invalid from/to date");
   }
@@ -125,10 +136,18 @@ const getVisitorStats = async ({ from, to, groupBy = "day" } = {}) => {
   }));
 
   return {
-    range: { from: start.toISOString(), to: end.toISOString(), groupBy: groupBy in GROUP_TRUNC ? groupBy : "day" },
+    range: {
+      from: start.toISOString(),
+      to: end.toISOString(),
+      groupBy: groupBy in GROUP_TRUNC ? groupBy : "day",
+    },
     totals: totals[0] || { pageViews: 0, visitors: 0, visits: 0 },
     series,
-    topPages: topPages.map((r) => ({ path: r.path, views: r.views, visitors: r.visitors })),
+    topPages: topPages.map((r) => ({
+      path: r.path,
+      views: r.views,
+      visitors: r.visitors,
+    })),
   };
 };
 

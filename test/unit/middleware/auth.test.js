@@ -5,7 +5,10 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const request = require("supertest");
 
-const { protect, allowTo } = require("../../../src/middlewares/auth.middleware");
+const {
+  protect,
+  allowTo,
+} = require("../../../src/middlewares/auth.middleware");
 const errorHandler = require("../../../src/middlewares/error.middleware");
 const { ROLES } = require("../../../src/shared/constants/roles");
 
@@ -28,8 +31,11 @@ const mockPrisma = {
 const createTestApp = (allowedRoles = [ROLES.ADMIN]) => {
   const app = express();
 
-  app.get("/protected", protect(mockPrisma), allowTo(allowedRoles), (req, res) =>
-    res.status(200).json({ data: req.user }),
+  app.get(
+    "/protected",
+    protect(mockPrisma),
+    allowTo(allowedRoles),
+    (req, res) => res.status(200).json({ data: req.user }),
   );
   app.use(errorHandler);
 
@@ -114,9 +120,6 @@ describe("authentication and authorization middleware", () => {
       .set("Authorization", `Bearer ${token}`);
 
     assert.equal(response.status, 403);
-    assert.equal(
-      response.body.message,
-      "You are not authorized to do this",
-    );
+    assert.equal(response.body.message, "You are not authorized to do this");
   });
 });

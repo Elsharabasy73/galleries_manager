@@ -1,0 +1,45 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    name: Lint, Format & Test
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: test-jwt-secret-key-for-ci-testing-purposes
+      DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+      REDIS_URL: redis://localhost:6379
+      RESEND_API_KEY: re_dummy_ci_key
+      RESEND_FROM: test@example.com
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 3. Install dependencies (Clean Install)
+        run: npm ci
+
+      - name: 4. Generate Prisma Client
+        run: npx prisma generate
+
+      - name: 5. Verify code formatting
+        run: npm run format:check
+
+      - name: 6. Run ESLint code analysis
+        run: npm run lint
+
+      - name: 7. Run automated test suite
+        run: npm test
