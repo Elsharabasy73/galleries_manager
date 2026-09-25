@@ -155,10 +155,6 @@ jobs:
             # 3. Run database migrations (applies any new schema changes)
             npx prisma migrate deploy
 
-            # 4. Restart the application service
-            sudo systemctl daemon-reload
-            sudo systemctl restart galleries_manager.service
-            sudo systemctl status galleries_manager.service --no-pager
           EOF
 
       # Next: deploy frontend and set up Caddy.
