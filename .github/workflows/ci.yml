@@ -120,14 +120,22 @@ jobs:
 
       - name: Install dependencies, run Prisma, and restart service
         run: |
-          ssh -i ~/.ssh/medo_production.pem $EC2_HOST << 'EOF'
+          ssh -i ~/.ssh/medo_production.pem $EC2_HOST << EOF
             set -e
 
             # Load nvm (not loaded by default in non-interactive SSH)
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            export NVM_DIR="\$HOME/.nvm"
+            [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
 
             cd ~/galleries_manager
+
+            # Export environment variables for Prisma and the app
+            export DATABASE_URL="${DATABASE_URL}"
+            export JWT_SECRET="${JWT_SECRET}"
+            export REDIS_URL="${REDIS_URL}"
+            export RESEND_API_KEY="${RESEND_API_KEY}"
+            export RESEND_FROM="${RESEND_FROM}"
+            export NODE_ENV=production
 
             # 1. Install production dependencies only
             npm ci --omit=dev
