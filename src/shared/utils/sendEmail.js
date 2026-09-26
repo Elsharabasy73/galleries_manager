@@ -61,7 +61,7 @@ const renderEmailTemplate = async (options, purpose) => {
   return { html, text };
 };
 
-const sendEmailWithGmail = async (options, purpose, emailTemplate) => {
+const sendEmailWithGmail = async (options, emailTemplate) => {
   const { html, text } = emailTemplate;
 
   const transporter = nodemailer.createTransport({
@@ -83,11 +83,11 @@ const sendEmailWithGmail = async (options, purpose, emailTemplate) => {
   };
 
   const info = await transporter.sendMail(mailOptions);
-  console.log(`Email sent via Gmail: ${info.messageId}`);
+  // console.log(`Email sent via Gmail: ${info.messageId}`);
   return info;
 };
 
-const sendEmailWithResend = async (options, purpose, emailTemplate) => {
+const sendEmailWithResend = async (options, emailTemplate) => {
   const { html, text } = emailTemplate;
 
   // Send the email using Resend.
@@ -104,7 +104,7 @@ const sendEmailWithResend = async (options, purpose, emailTemplate) => {
     throw new Error(error.message);
   }
 
-  console.log(`Email sent via Resend: ${data.id}`);
+  // console.log(`Email sent via Resend: ${data.id}`);
   return data;
 };
 
@@ -125,7 +125,7 @@ const sendEmail = async (options, purpose) => {
 
   const provider = providerSelector();
 
-  return provider(options, purpose, emailTemplate);
+  return provider(options, emailTemplate);
 };
 
 module.exports = { sendEmail };
