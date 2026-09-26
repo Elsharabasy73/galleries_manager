@@ -160,3 +160,4 @@ storage/uploads/products/*
 
 DESIGN.md
 .github/agents/
+EC2_DEPLOYMENT_NOTES.md
