@@ -8,7 +8,7 @@ after their contracts are defined.
 
 ## Technology
 
-- Node.js 22+
+- Node.js 24+
 - Express 5
 - PostgreSQL
 - Prisma 7

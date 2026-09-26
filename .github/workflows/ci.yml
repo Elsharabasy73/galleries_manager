@@ -1,22 +1,25 @@
-name: CI/CD Pipeline
-
+name: CI
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  NODE_VERSION: 22
+  NODE_VERSION: "24"
 
 jobs:
-  # ============================================
-  # CI Job - Lint, Format & Test
-  # ============================================
   ci:
-    name: CI - Lint, Format & Test
+    name: Lint, format, prisma & test
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     env:
       NODE_ENV: test
       JWT_SECRET: test-jwt-secret-key-for-ci-testing-purposes
@@ -24,180 +27,51 @@ jobs:
       REDIS_URL: redis://localhost:6379
       RESEND_API_KEY: re_dummy_ci_key
       RESEND_FROM: test@example.com
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js ${{ env.NODE_VERSION }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
+      - name: Validate Prisma schema
+        run: npm run prisma:validate
 
-      - name: Check code formatting
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Check formatting
         run: npm run format:check
 
-      - name: Run ESLint
+      - name: Lint
         run: npm run lint
 
-      - name: Run tests
+      - name: Test
         run: npm test
 
-  # ============================================
-  # CD Job - Deploy to EC2 (main branch only)
-  # ============================================
-  cd:
-    name: CD - Deploy to EC2
+  docker-build:
+    name: Docker build sanity check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    env:
-      EC2_HOST: ${{ secrets.EC2_HOST }}
-      SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      REDIS_URL: ${{ secrets.REDIS_URL }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      RESEND_FROM: ${{ secrets.RESEND_FROM }}
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key.pem
-          chmod 600 ~/.ssh/deploy_key.pem
-          ssh-keyscan -H ${EC2_HOST#*@} >> ~/.ssh/known_hosts
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Deploy to EC2
-        run: |
-          ssh -i ~/.ssh/deploy_key.pem $EC2_HOST << 'REMOTE_SCRIPT'
-            set -e
-
-            # === Helper: Load nvm ===
-            load_nvm() {
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            }
-
-            # === Provision Server (only if Node.js not installed) ===
-            if ! command -v node &> /dev/null; then
-              echo "📦 Provisioning server..."
-              
-              # Update system
-              sudo apt-get update -y
-              
-              # Install Node.js via nvm
-              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-              load_nvm
-              nvm install 22
-              nvm alias default 22
-              
-              # Install Redis
-              sudo apt-get install -y redis-server
-              sudo systemctl enable redis-server
-              sudo systemctl start redis-server
-              
-              # Create swap file (for low-memory instances)
-              if [ ! -f /swapfile ]; then
-                sudo fallocate -l 2G /swapfile
-                sudo chmod 600 /swapfile
-                sudo mkswap /swapfile
-                sudo swapon /swapfile
-                echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-              fi
-              
-              echo "✅ Server provisioned"
-            fi
-
-            load_nvm
-            echo "Node: $(node -v)"
-            echo "NPM: $(npm -v)"
-          REMOTE_SCRIPT
-
-      - name: Upload code to EC2
-        run: |
-          rsync -avz --delete \
-            --exclude 'node_modules' \
-            --exclude '.git' \
-            --exclude '.github' \
-            --exclude '.env' \
-            --exclude 'test' \
-            --exclude 'coverage' \
-            --exclude 'logs' \
-            --exclude '*.log' \
-            -e "ssh -i ~/.ssh/deploy_key.pem" \
-            ./ $EC2_HOST:~/galleries_manager
-
-      - name: Build and deploy application
-        run: |
-          ssh -i ~/.ssh/deploy_key.pem $EC2_HOST << EOF
-            set -e
-
-            # Load nvm
-            export NVM_DIR="\$HOME/.nvm"
-            [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
-
-            cd ~/galleries_manager
-
-            # Install dependencies
-            npm ci --omit=dev
-
-            # Generate Prisma Client
-            export DATABASE_URL="${DATABASE_URL}"
-            npx prisma generate
-
-            # Run migrations
-            npx prisma migrate deploy
-
-            # Create/update systemd service
-            NODE_PATH=\$(which node)
-            
-            sudo tee /etc/systemd/system/galleries_manager.service > /dev/null << SERVICE
-          [Unit]
-          Description=Galleries Manager API
-          After=network.target redis-server.service
-
-          [Service]
-          Type=simple
-          User=ubuntu
-          WorkingDirectory=/home/ubuntu/galleries_manager
-          ExecStart=\${NODE_PATH} /home/ubuntu/galleries_manager/src/server.js
-          Restart=always
-          RestartSec=10
-          Environment=NODE_ENV=production
-          EnvironmentFile=/etc/galleries_manager.env
-
-          [Install]
-          WantedBy=multi-user.target
-          SERVICE
-
-            # Create/update environment file
-            sudo tee /etc/galleries_manager.env > /dev/null << ENVFILE
-          DATABASE_URL=${DATABASE_URL}
-          JWT_SECRET=${JWT_SECRET}
-          REDIS_URL=${REDIS_URL}
-          RESEND_API_KEY=${RESEND_API_KEY}
-          RESEND_FROM=${RESEND_FROM}
-          ENVFILE
-
-            # Restart service
-            sudo systemctl daemon-reload
-            sudo systemctl enable galleries_manager.service
-            sudo systemctl restart galleries_manager.service
-
-            # Verify
-            sleep 2
-            sudo systemctl status galleries_manager.service --no-pager
-            echo "✅ Deployment complete"
-          EOF
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: galleries-manager:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

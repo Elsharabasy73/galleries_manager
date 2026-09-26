@@ -1,0 +1,87 @@
+# Production stack for a single EC2 host.
+# Usage (on EC2, with /opt/galleries_manager/.env.prod present):
+#   IMAGE=ghcr.io/<owner>/galleries_manager:<sha> docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Secrets live ONLY in .env.prod (0600). Never commit that file.
+# App reads DATABASE_URL + REDIS_URL pointing at the internal service names below.
+
+name: galleries-manager-prod
+
+services:
+  app:
+    image: ${IMAGE:?IMAGE must be set, e.g. ghcr.io/<owner>/galleries_manager:<sha>}
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      # Uploads only: storage/emails (banner assets) stays baked in the image.
+      - uploads:/app/storage/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-galleries_manager}
+      POSTGRES_USER: ${POSTGRES_USER:-galleries}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env.prod}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-galleries}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:

@@ -1,0 +1,133 @@
+name: CD
+
+# Deploys main to EC2 with Docker. CI must stay green on main
+# (protect the branch with the CI workflow as a required check).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Existing GHCR tag to redeploy (default: latest)"
+        required: false
+        default: latest
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'push'
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute short SHA tag
+        id: tag
+        run: echo "value=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute lowercase image name
+        id: image_name
+        run: echo "value=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.value }}
+          tags: |
+            type=raw,value=${{ steps.tag.outputs.value }}
+            type=raw,value=latest
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-and-push
+    # Manual runs skip the build job, so run when it succeeded or was skipped.
+    if: ${{ always() && (needs.build-and-push.result == 'success' || github.event_name == 'workflow_dispatch') }}
+    environment:
+      name: production
+    steps:
+      - name: Checkout (compose + deploy script)
+        uses: actions/checkout@v4
+
+      - name: Compute lowercase deployment image
+        id: image
+        env:
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.tag || inputs.image_tag || 'latest' }}
+        run: echo "value=ghcr.io/${GITHUB_REPOSITORY,,}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare deployment directory
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          script: |
+            set -e
+            sudo install -d -m 0755 -o "$(id -un)" -g "$(id -gn)" /opt/galleries_manager
+
+      - name: Copy stack files to EC2
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          source: "docker-compose.prod.yml,scripts/deploy.sh"
+          target: "/opt/galleries_manager"
+          strip_components: 0
+          overwrite: true
+
+      - name: Run deploy on EC2
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE: ${{ steps.image.outputs.value }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          envs: IMAGE
+          script: |
+            set -euo pipefail
+            cd /opt/galleries_manager
+            chmod +x scripts/deploy.sh
+            IMAGE="$IMAGE" ./scripts/deploy.sh
