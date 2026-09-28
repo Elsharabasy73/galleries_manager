@@ -1,14 +1,10 @@
 const assert = require("node:assert/strict");
-const { afterEach, beforeEach, describe, it } = require("node:test");
+const { afterEach, beforeEach, describe, it, mock } = require("node:test");
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const request = require("supertest");
 
-const {
-  protect,
-  allowTo,
-} = require("../../../src/middlewares/auth.middleware");
 const errorHandler = require("../../../src/middlewares/error.middleware");
 const { ROLES } = require("../../../src/shared/constants/roles");
 
@@ -28,14 +24,23 @@ const mockPrisma = {
   },
 };
 
+// Mock getPrisma before requiring the middleware
+mock.method(
+  require("../../../src/config/prisma"),
+  "getPrisma",
+  () => mockPrisma,
+);
+
+const {
+  protect,
+  allowTo,
+} = require("../../../src/middlewares/auth.middleware");
+
 const createTestApp = (allowedRoles = [ROLES.ADMIN]) => {
   const app = express();
 
-  app.get(
-    "/protected",
-    protect(mockPrisma),
-    allowTo(allowedRoles),
-    (req, res) => res.status(200).json({ data: req.user }),
+  app.get("/protected", protect, allowTo(allowedRoles), (req, res) =>
+    res.status(200).json({ data: req.user }),
   );
   app.use(errorHandler);
 

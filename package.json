@@ -24,6 +24,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.3",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@react-email/render": "^2.1.0",

@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
+const { BrevoClient } = require("@getbrevo/brevo");
 const { render } = require("@react-email/render");
 
 const { getEnvironment } = require("../../config/env");
@@ -90,7 +91,6 @@ const sendEmailWithGmail = async (options, emailTemplate) => {
 const sendEmailWithResend = async (options, emailTemplate) => {
   const { html, text } = emailTemplate;
 
-  // Send the email using Resend.
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
     from: process.env.RESEND_FROM,
@@ -101,20 +101,78 @@ const sendEmailWithResend = async (options, emailTemplate) => {
   });
 
   if (error) {
-    throw new Error(error.message);
+    const resendError = new Error(error.message);
+    resendError.name = error.name || "ResendError";
+    resendError.statusCode = error.statusCode;
+    throw resendError;
   }
 
-  // console.log(`Email sent via Resend: ${data.id}`);
   return data;
 };
 
+const sendEmailWithBrevoApi = async (options, emailTemplate, brevoClient) => {
+  const { brevoApiKey, brevoFrom } = getEnvironment();
+  const { html, text } = emailTemplate;
+  const client = brevoClient || new BrevoClient({ apiKey: brevoApiKey });
+
+  return client.transactionalEmails.sendTransacEmail({
+    sender: {
+      name: "ElShaRabasy APP",
+      email: brevoFrom,
+    },
+    to: [{ email: options.email }],
+    subject: options.subject,
+    htmlContent: html,
+    textContent: text,
+  });
+};
+
+const isResendQuotaError = (error) => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  // Check for HTTP 429 status code, which indicates a rate limit error
+  if (error.statusCode === 429) {
+    return true;
+  }
+
+  const details = `${error.name || ""} ${error.message || ""}`;
+
+  return /quota|(?:daily|monthly|sending|email|rate)[\s_-]*limit|limit[\s_-]*(?:reached|exceeded|exhausted)/i.test(
+    details,
+  );
+};
+
+const sendWithResendFallback = async (
+  options,
+  emailTemplate,
+  providers = {
+    resend: sendEmailWithResend,
+    brevo: sendEmailWithBrevoApi,
+  },
+) => {
+  try {
+    return await providers.resend(options, emailTemplate);
+  } catch (error) {
+    if (!isResendQuotaError(error)) {
+      throw error;
+    }
+
+    return providers.brevo(options, emailTemplate);
+  }
+};
+
 const providerSelector = () => {
-  if (process.env.SENDER === "RESEND") {
-    return sendEmailWithResend;
+  if (!process.env.SENDER || process.env.SENDER === "RESEND") {
+    return sendWithResendFallback;
   }
 
   if (process.env.SENDER === "GMAIL") {
     return sendEmailWithGmail;
+  }
+
+  if (process.env.SENDER === "BREVO") {
+    return sendEmailWithBrevoApi;
   }
 
   throw new Error(`Invalid email sender: ${process.env.SENDER}`);

@@ -6,7 +6,6 @@ const { getPrisma } = require("../config/prisma");
 
 // Protect routes
 exports.protect = asyncHandler(async (req, res, next) => {
-  console.log("HHHHHHHHHHHHHHH");
   const prisma = getPrisma();
   // 1. Check if token was provided
   let token;

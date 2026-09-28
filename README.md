@@ -158,8 +158,10 @@ model will be added after its fields are specified.
 
 ## Sending emails
 
-Emails are sent via Resend and Nodemailer. The `sendEmail` function is a
-composition of the following functions:
+Emails use Resend as the primary provider. If Resend explicitly reports that its
+sending quota or limit has been reached, the same rendered message is sent via
+Brevo's HTTP API. Other Resend errors are propagated without a retry,
+avoiding hidden failures and duplicate sends.
 
                     sendEmail()
                          │
@@ -169,9 +171,11 @@ composition of the following functions:
                     { html, text }
                          │
                          ▼
-                Choose provider
-                   ↙         ↘
-               Resend       Gmail
+              Send with Resend
+                   │
+           quota/limit exhausted?
+              ↙             ↘
+           Brevo API       Return error
 
 flowchart TD
 A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
@@ -189,13 +193,21 @@ A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
     G --> I["{ html, text }"]
     H --> I
 
-    I --> J["providerSelector()"]
+    I --> J{"SENDER"}
 
-    J -->|"SENDER = RESEND"| K["sendEmailWithResend"]
-    J -->|"SENDER = GMAIL"| L["sendEmailWithGmail"]
+    J -->|"RESEND (default)"| K["sendEmailWithResend"]
+    J -->|"GMAIL (legacy)"| L["sendEmailWithGmail"]
 
     K --> M["Resend API"]
     L --> N["SMTP / Gmail"]
 
-    M --> O["Email sent"]
+    M -->|"quota/limit exhausted"| P["Brevo API"]
+    M -->|"success"| O["Email sent"]
+    P --> O
     N --> O
+
+Configure `RESEND_API_KEY` and `RESEND_FROM` as usual. For failover, configure
+`BREVO_API_KEY` from your Brevo API settings and set `BREVO_FROM` to a sender
+address verified in Brevo. Keep `SENDER=RESEND` (or leave it unset) to enable
+Resend with Brevo API fallback. `SENDER=BREVO` sends directly through Brevo's
+API, while `SENDER=GMAIL` remains available as a legacy option.
