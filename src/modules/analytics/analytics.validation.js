@@ -15,11 +15,11 @@ const trackValidator = [
     .isLength({ min: 1, max: 500 })
     .withMessage("Invalid path"),
   body("referrer")
-    .optional()
+    .optional({ nullable: true})
     .isString()
     .isLength({ max: 1000 })
     .withMessage("Invalid referrer"),
-  body("userId").optional().isUUID().withMessage("userId must be a UUID"),
+  body("userId").optional({ nullable: true }).isUUID().withMessage("userId must be a UUID"),
   validatorMiddleware,
 ];
 
