@@ -3,10 +3,6 @@ name: CD
 # Deploys main to EC2 with Docker. CI must stay green on main
 # (protect the branch with the CI workflow as a required check).
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       image_tag:
