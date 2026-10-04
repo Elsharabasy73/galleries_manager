@@ -1,10 +1,9 @@
-const fs = require("fs/promises");
 const path = require("path");
 
 const { getPrisma } = require("../../config/prisma");
 const { STORAGE_DIRS, IMAGE_EXTENSIONS } = require("./admin.constants");
 const { ROLES } = require("../../shared/constants/roles");
-const UPLOADS_ROOT = path.join(process.cwd(), "storage", "uploads");
+const { listStorageFiles } = require("../../shared/utils/storage/storage");
 const ApiError = require("../../shared/utils/ApiError");
 const slugify = require("slugify");
 
@@ -13,123 +12,45 @@ const isImageFile = (fileName) => {
   return IMAGE_EXTENSIONS.includes(ext);
 };
 
-// Recursively count files under a directory.
-// Returns { files, imageFiles, folders }
-const countFilesRecursive = async (dirPath) => {
-  try {
-    await fs.access(dirPath);
-  } catch {
-    return { files: 0, imageFiles: 0, folders: 0 };
-  }
-
-  let files = 0;
-  let imageFiles = 0;
-  let folders = 0;
-
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-  // Count sub-directories at this level
-  for (const entry of entries) {
-    if (entry.isDirectory()) folders += 1;
-  }
-
-  const tasks = entries.map(async (entry) => {
-    const fullPath = path.join(dirPath, entry.name);
-
-    if (entry.isDirectory()) {
-      const sub = await countFilesRecursive(fullPath);
-      return sub;
-    }
-
-    if (entry.isFile()) {
-      // Ignore .gitkeep and hidden dotfiles
-      if (entry.name === ".gitkeep" || entry.name.startsWith(".")) {
-        return { files: 0, imageFiles: 0, folders: 0 };
-      }
-      return {
-        files: 1,
-        imageFiles: isImageFile(entry.name) ? 1 : 0,
-        folders: 0,
-      };
-    }
-
-    return { files: 0, imageFiles: 0, folders: 0 };
-  });
-
-  const results = await Promise.all(tasks);
-
-  for (const r of results) {
-    files += r.files;
-    imageFiles += r.imageFiles;
-    folders += r.folders;
-  }
-
-  return { files, imageFiles, folders };
-};
-
-// Recursively list all image files under a directory, returned as relative
-// paths like "galleries/<folder>/<file>" or "products/<folder>/<file>".
-const listFilesRecursive = async (dirPath, prefix) => {
-  try {
-    await fs.access(dirPath);
-  } catch {
-    return [];
-  }
-
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
-  const files = [];
-
-  for (const entry of entries) {
-    if (entry.name === ".gitkeep" || entry.name.startsWith(".")) continue;
-
-    const fullPath = path.join(dirPath, entry.name);
-
-    if (entry.isDirectory()) {
-      const nested = await listFilesRecursive(
-        fullPath,
-        `${prefix}/${entry.name}`,
-      );
-      files.push(...nested);
-    } else if (entry.isFile() && isImageFile(entry.name)) {
-      files.push(`${prefix}/${entry.name}`);
-    }
-  }
-
-  return files;
-};
+const summarizeStorageFiles = (files) => ({
+  totalFiles: files.length,
+  imageFiles: files.filter(isImageFile).length,
+  folders: new Set(
+    files.map((file) => file.split("/").slice(1, 2)[0]).filter(Boolean),
+  ).size,
+});
 
 const getFilesystemCounts = async () => {
-  const galleriesPath = path.join(UPLOADS_ROOT, STORAGE_DIRS.GALLERIES);
-  const productsPath = path.join(UPLOADS_ROOT, STORAGE_DIRS.PRODUCTS);
-  const usersPath = path.join(UPLOADS_ROOT, STORAGE_DIRS.USERS);
-
-  const [galleries, products, users] = await Promise.all([
-    countFilesRecursive(galleriesPath),
-    countFilesRecursive(productsPath),
-    countFilesRecursive(usersPath),
+  const [galleryFiles, productFiles, userFiles] = await Promise.all([
+    listStorageFiles(STORAGE_DIRS.GALLERIES),
+    listStorageFiles(STORAGE_DIRS.PRODUCTS),
+    listStorageFiles(STORAGE_DIRS.USERS),
   ]);
+  const galleries = summarizeStorageFiles(galleryFiles);
+  const products = summarizeStorageFiles(productFiles);
+  const users = summarizeStorageFiles(userFiles);
 
   return {
     galleries: {
       path: `storage/uploads/${STORAGE_DIRS.GALLERIES}`,
-      totalFiles: galleries.files,
+      totalFiles: galleries.totalFiles,
       imageFiles: galleries.imageFiles,
       folders: galleries.folders,
     },
     products: {
       path: `storage/uploads/${STORAGE_DIRS.PRODUCTS}`,
-      totalFiles: products.files,
+      totalFiles: products.totalFiles,
       imageFiles: products.imageFiles,
       folders: products.folders,
     },
     users: {
       path: `storage/uploads/${STORAGE_DIRS.USERS}`,
-      totalFiles: users.files,
+      totalFiles: users.totalFiles,
       imageFiles: users.imageFiles,
       folders: users.folders,
     },
     total: {
-      totalFiles: galleries.files + products.files + users.files,
+      totalFiles: galleries.totalFiles + products.totalFiles + users.totalFiles,
       imageFiles: galleries.imageFiles + products.imageFiles + users.imageFiles,
       folders: galleries.folders + products.folders + users.folders,
     },
@@ -244,17 +165,17 @@ const getImageStats = async () => {
 // ── Orphan detection: which files are on disk but not in DB, and vice versa ──
 
 const getFilesystemFileLists = async () => {
-  const galleriesPath = path.join(UPLOADS_ROOT, STORAGE_DIRS.GALLERIES);
-  const productsPath = path.join(UPLOADS_ROOT, STORAGE_DIRS.PRODUCTS);
-  const usersPath = path.join(UPLOADS_ROOT, STORAGE_DIRS.USERS);
-
   const [galleries, products, users] = await Promise.all([
-    listFilesRecursive(galleriesPath, STORAGE_DIRS.GALLERIES),
-    listFilesRecursive(productsPath, STORAGE_DIRS.PRODUCTS),
-    listFilesRecursive(usersPath, STORAGE_DIRS.USERS),
+    listStorageFiles(STORAGE_DIRS.GALLERIES),
+    listStorageFiles(STORAGE_DIRS.PRODUCTS),
+    listStorageFiles(STORAGE_DIRS.USERS),
   ]);
 
-  return { galleries, products, users };
+  return {
+    galleries: galleries.filter(isImageFile),
+    products: products.filter(isImageFile),
+    users: users.filter(isImageFile),
+  };
 };
 
 const getDatabaseFileLists = async () => {

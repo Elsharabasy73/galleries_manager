@@ -12,7 +12,6 @@ const {
   updateGallery,
   resizeAndUpdateGalleryImages,
   deleteGallery,
-  deleteGalleryImages,
   countGalleries,
 } = require("./gallery.controller");
 
@@ -72,7 +71,6 @@ router
     protect,
     allowTo([ROLES.ADMIN, ROLES.GALLERY_OWNER]),
     deleteGalleryValidator,
-    deleteGalleryImages,
     deleteGallery,
   );
 

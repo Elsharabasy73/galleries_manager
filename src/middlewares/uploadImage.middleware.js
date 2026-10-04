@@ -3,6 +3,7 @@ const ApiError = require("../shared/utils/ApiError");
 
 const multerOptions = () => {
   const multerStorage = multer.memoryStorage();
+  const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
   const multerFilter = function (req, file, cb) {
     if (file.mimetype.startsWith("image")) {
@@ -12,7 +13,11 @@ const multerOptions = () => {
     }
   };
 
-  const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+  const upload = multer({
+    storage: multerStorage,
+    fileFilter: multerFilter,
+    limits: { fileSize: MAX_IMAGE_SIZE_BYTES, files: 11 },
+  });
 
   return upload;
 };
