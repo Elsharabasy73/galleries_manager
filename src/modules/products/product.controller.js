@@ -1,8 +1,18 @@
 const factory = require("../../controllers/handleFactory");
 const { getPrisma } = require("../../config/prisma");
+const { v4: uuidv4 } = require("uuid");
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../../shared/utils/ApiError");
 const { ROLES } = require("../../shared/constants/roles");
+const {
+  deleteStorageKey,
+  STORAGE_TYPES,
+} = require("../../shared/utils/storage/storage");
+const {
+  getStableImageFolder,
+  processImage,
+  processImages,
+} = require("../../shared/utils/storage/image.utils");
 
 const prisma = getPrisma();
 
@@ -73,7 +83,135 @@ const setGalleryIdFilter = asyncHandler(async (req, res, next) => {
   next();
 });
 
-const createProduct = factory.createOne(prisma.product);
+const getProductImageRefs = (product) => [
+  ...new Set(
+    [product?.mainImageUrl, ...(product?.images || [])].filter(Boolean),
+  ),
+];
+
+const deleteProductImageRefs = async (refs) => {
+  const storageRefs = [...new Set(refs)].filter(
+    (ref) => typeof ref === "string" && !/^https?:\/\//i.test(ref),
+  );
+
+  await Promise.all(
+    storageRefs.map((ref) => deleteStorageKey(STORAGE_TYPES.PRODUCTS, ref)),
+  );
+};
+
+const processProductImages = asyncHandler(async (req, res, next) => {
+  req.uploadedProductImageRefs = [];
+  req.oldProductImageRefs = [];
+
+  const primaryFile =
+    req.files?.mainImage?.[0] ||
+    req.files?.mainImageUrl?.[0] ||
+    req.files?.image?.[0];
+  const extraFiles = req.files?.images || [];
+
+  if (!primaryFile && !extraFiles.length) {
+    if (req.method === "POST" && req.body.images === undefined) {
+      req.body.images = [];
+    }
+    return next();
+  }
+
+  const productId = req.method === "POST" ? uuidv4() : req.product.id;
+  const folderName = getStableImageFolder(
+    req.method === "POST"
+      ? { id: productId }
+      : {
+          id: req.product.id,
+          mainImageUrl: req.product.mainImageUrl,
+          images: req.product.images,
+        },
+  );
+
+  if (req.method === "POST") {
+    req.body.id = productId;
+  }
+
+  let primaryImageRef;
+  let extraImageRefs = [];
+
+  try {
+    if (primaryFile) {
+      const fileName = await processImage({
+        file: primaryFile,
+        type: STORAGE_TYPES.PRODUCTS,
+        folderName,
+        prefix: "main-image",
+        width: 1000,
+        height: 1000,
+      });
+      primaryImageRef = `${folderName}/${fileName}`;
+      req.uploadedProductImageRefs.push(primaryImageRef);
+    }
+
+    if (extraFiles.length) {
+      const fileNames = await processImages({
+        files: extraFiles,
+        type: STORAGE_TYPES.PRODUCTS,
+        folderName,
+        prefix: "image",
+        width: 1000,
+        height: 1000,
+      });
+      extraImageRefs = fileNames.map((fileName) => `${folderName}/${fileName}`);
+      req.uploadedProductImageRefs.push(...extraImageRefs);
+    }
+  } catch (error) {
+    if (req.uploadedProductImageRefs.length) {
+      await deleteProductImageRefs(req.uploadedProductImageRefs);
+    }
+    throw error;
+  }
+
+  if (!primaryImageRef && extraImageRefs.length) {
+    [primaryImageRef] = extraImageRefs;
+  }
+
+  const previousMainImage = req.product?.mainImageUrl;
+  const previousImages = req.product?.images || [];
+  let nextImages = [...previousImages];
+
+  if (extraImageRefs.length) {
+    nextImages = [...extraImageRefs];
+  }
+
+  if (primaryImageRef) {
+    if (previousMainImage && nextImages.includes(previousMainImage)) {
+      nextImages = nextImages.map((ref) =>
+        ref === previousMainImage ? primaryImageRef : ref,
+      );
+    } else if (!nextImages.includes(primaryImageRef)) {
+      nextImages.unshift(primaryImageRef);
+    }
+    req.body.mainImageUrl = primaryImageRef;
+  }
+
+  req.body.images = [...new Set(nextImages)];
+  req.oldProductImageRefs = getProductImageRefs(req.product).filter(
+    (ref) => ref !== req.body.mainImageUrl && !req.body.images.includes(ref),
+  );
+
+  next();
+});
+
+const createProduct = asyncHandler(async (req, res) => {
+  let product;
+
+  try {
+    product = await prisma.product.create({ data: req.body });
+  } catch (error) {
+    if (req.uploadedProductImageRefs.length) {
+      await deleteProductImageRefs(req.uploadedProductImageRefs);
+    }
+    throw error;
+  }
+
+  res.status(201).json({ data: product });
+});
 
 const getAllProducts = factory.getAll(prisma.product, "product", {
   gallery: true,
@@ -83,9 +221,33 @@ const getProduct = factory.getOne(prisma.product, {
   gallery: true,
 });
 
-const updateProduct = factory.updateOne(prisma.product);
+const updateProduct = asyncHandler(async (req, res) => {
+  let product;
 
-const deleteProduct = factory.deleteOne(prisma.product);
+  try {
+    product = await prisma.product.update({
+      where: { id: req.product.id },
+      data: req.body,
+    });
+  } catch (error) {
+    if (req.uploadedProductImageRefs.length) {
+      await deleteProductImageRefs(req.uploadedProductImageRefs);
+    }
+    throw error;
+  }
+
+  if (req.oldProductImageRefs.length) {
+    await deleteProductImageRefs(req.oldProductImageRefs);
+  }
+
+  res.status(200).json({ data: product });
+});
+
+const deleteProduct = asyncHandler(async (req, res) => {
+  await prisma.product.delete({ where: { id: req.product.id } });
+  await deleteProductImageRefs(getProductImageRefs(req.product));
+  res.status(204).send();
+});
 
 //@desc Get number of products
 //@route GET /api/v1/products/count
@@ -109,4 +271,5 @@ module.exports = {
   checkProductOwnership,
   setGalleryIdFilter,
   countProducts,
+  processProductImages,
 };

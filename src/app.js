@@ -9,6 +9,11 @@ const path = require("path");
 const errorHandler = require("./middlewares/error.middleware");
 const notFound = require("./middlewares/notFound.middleware");
 const apiRoutes = require("./routes");
+const {
+  getStorageFileUrl,
+  getStorageProvider,
+  STORAGE_TYPES,
+} = require("./shared/utils/storage/storage");
 
 const createApp = () => {
   const app = express();
@@ -30,7 +35,32 @@ const createApp = () => {
     }),
   );
   app.use(express.json({ limit: "1mb" }));
-  app.use("/storage", express.static(path.join(__dirname, "..", "storage")));
+  if (getStorageProvider() === "r2") {
+    app.use("/storage", express.static(path.join(__dirname, "..", "storage")));
+    app.use("/storage", (req, res, next) => {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        return next();
+      }
+
+      const [root, type, folderName, fileName, ...extraSegments] = req.path
+        .split("/")
+        .filter(Boolean);
+
+      if (
+        root !== "uploads" ||
+        !Object.values(STORAGE_TYPES).includes(type) ||
+        !folderName ||
+        !fileName ||
+        extraSegments.length
+      ) {
+        return next();
+      }
+
+      res.redirect(302, getStorageFileUrl(type, folderName, fileName));
+    });
+  } else {
+    app.use("/storage", express.static(path.join(__dirname, "..", "storage")));
+  }
   if (process.env.NODE_ENV === "development") {
     app.use(morgan("dev"));
   }

@@ -24,6 +24,7 @@ const {
   checkProductOwnership,
   setGalleryIdFilter,
   countProducts,
+  processProductImages,
 } = require("./product.controller");
 
 const {
@@ -48,6 +49,7 @@ router
     uploadProductImages,
     setGalleryAndCreator,
     createProductValidator,
+    processProductImages,
     createProduct,
   );
 
@@ -60,6 +62,7 @@ router
     uploadProductImages,
     updateProductValidator,
     checkProductOwnership,
+    processProductImages,
     updateProduct,
   )
   .delete(

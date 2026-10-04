@@ -1,6 +1,3 @@
-const fs = require("fs/promises");
-const path = require("path");
-
 const asyncHandler = require("express-async-handler");
 const { v4: uuidv4 } = require("uuid");
 
@@ -13,15 +10,14 @@ const { getPrisma } = require("../../config/prisma");
 
 const {
   STORAGE_TYPES,
+  deleteStorageFiles,
   deleteStorageFolder,
-} = require("../../shared/utils/storage.utils");
+} = require("../../shared/utils/storage/storage");
 
 const {
   processImage,
   processImages,
-  replaceImage,
-  replaceImages,
-} = require("../../shared/utils/image.utils");
+} = require("../../shared/utils/storage/image.utils");
 
 const galleryService = require("./gallery.service");
 
@@ -33,18 +29,6 @@ const uploadgalleryImages = uploadMixOfImages([
   { name: "images", maxCount: 5 },
 ]);
 
-//@desc Delete gallery images
-//@route DELETE /api/v1/galleries/:id/images
-//@access Private (gallery_owner)
-const deleteGalleryImages = asyncHandler(async (req, res, next) => {
-  await deleteStorageFolder(STORAGE_TYPES.GALLERIES, req.gallery.storageFolder);
-
-  next();
-});
-
-const createStoragePath = (pathEndPoint) =>
-  path.join(process.cwd(), "storage", "uploads", "galleries", pathEndPoint);
-
 //@desc Resize gallery images
 //@route POST /api/v1/galleries/:id/images
 //@access Private (gallery_owner)
@@ -52,49 +36,58 @@ const resizeGalleryImages = asyncHandler(async (req, res, next) => {
   // Create a unique folder for this gallery
   const galleryFolderName = `${req.body.slug}-${uuidv4()}`;
 
-  const galleryFolderPath = createStoragePath(galleryFolderName);
-  // Create folder before saving images
-  await fs.mkdir(galleryFolderPath, {
-    recursive: true,
-  });
-
   // Save folder name in database
   req.body.storageFolder = galleryFolderName;
-
-  // Banner
-  if (req.files?.banner?.length) {
-    req.body.banner = await processImage({
-      file: req.files.banner[0],
-      folderPath: galleryFolderPath,
-      prefix: "banner",
-      width: 1000,
-      height: 500,
-    });
+  if (req.body.images === undefined) {
+    req.body.images = [];
   }
+  req.uploadedGalleryImageNames = [];
 
-  // Logo
-  if (req.files?.logo?.length) {
-    req.body.logo = await processImage({
-      file: req.files.logo[0],
-      folderPath: galleryFolderPath,
-      prefix: "logo",
-      width: 500,
-      height: 500,
-      options: {
-        fit: "contain",
-      },
-    });
-  }
+  try {
+    // Banner
+    if (req.files?.banner?.length) {
+      req.body.banner = await processImage({
+        file: req.files.banner[0],
+        type: STORAGE_TYPES.GALLERIES,
+        folderName: galleryFolderName,
+        prefix: "banner",
+        width: 1000,
+        height: 500,
+      });
+      req.uploadedGalleryImageNames.push(req.body.banner);
+    }
 
-  // Gallery images
-  if (req.files?.images?.length) {
-    req.body.images = await processImages({
-      files: req.files.images,
-      folderPath: galleryFolderPath,
-      prefix: "image",
-      width: 1000,
-      height: 500,
-    });
+    // Logo
+    if (req.files?.logo?.length) {
+      req.body.logo = await processImage({
+        file: req.files.logo[0],
+        type: STORAGE_TYPES.GALLERIES,
+        folderName: galleryFolderName,
+        prefix: "logo",
+        width: 500,
+        height: 500,
+        options: {
+          fit: "contain",
+        },
+      });
+      req.uploadedGalleryImageNames.push(req.body.logo);
+    }
+
+    // Gallery images
+    if (req.files?.images?.length) {
+      req.body.images = await processImages({
+        files: req.files.images,
+        type: STORAGE_TYPES.GALLERIES,
+        folderName: galleryFolderName,
+        prefix: "gallery-image",
+        width: 1000,
+        height: 500,
+      });
+      req.uploadedGalleryImageNames.push(...req.body.images);
+    }
+  } catch (error) {
+    await deleteStorageFolder(STORAGE_TYPES.GALLERIES, galleryFolderName);
+    throw error;
   }
 
   next();
@@ -104,48 +97,79 @@ const resizeGalleryImages = asyncHandler(async (req, res, next) => {
 //@route PUT /api/v1/galleries/:id/images
 //@access Private (gallery_owner)
 const resizeAndUpdateGalleryImages = asyncHandler(async (req, res, next) => {
-  const galleryFolderPath = createStoragePath(req.gallery.storageFolder);
+  req.uploadedGalleryImageNames = [];
+  req.oldGalleryImageNames = [];
+  const hasUploadedImages = Boolean(
+    req.files?.banner?.length ||
+    req.files?.logo?.length ||
+    req.files?.images?.length,
+  );
+  const storageFolder =
+    req.gallery.storageFolder ||
+    (hasUploadedImages ? `${req.gallery.slug}-${uuidv4()}` : undefined);
 
-  // Replace banner
-  if (req.files?.banner?.length) {
-    req.body.banner = await replaceImage({
-      file: req.files.banner[0],
-      folderPath: galleryFolderPath,
-      storageFolder: req.gallery.storageFolder,
-      oldFileName: req.gallery.banner,
-      prefix: "banner",
-      width: 1000,
-      height: 500,
-    });
+  if (storageFolder && !req.gallery.storageFolder) {
+    req.body.storageFolder = storageFolder;
   }
 
-  // Replace logo
-  if (req.files?.logo?.length) {
-    req.body.logo = await replaceImage({
-      file: req.files.logo[0],
-      folderPath: galleryFolderPath,
-      storageFolder: req.gallery.storageFolder,
-      oldFileName: req.gallery.logo,
-      prefix: "logo",
-      width: 500,
-      height: 500,
-      options: {
-        fit: "contain",
-      },
-    });
-  }
+  try {
+    // Replace banner
+    if (req.files?.banner?.length) {
+      req.body.banner = await processImage({
+        file: req.files.banner[0],
+        type: STORAGE_TYPES.GALLERIES,
+        folderName: storageFolder,
+        prefix: "banner",
+        width: 1000,
+        height: 500,
+      });
+      req.uploadedGalleryImageNames.push(req.body.banner);
+      if (req.gallery.banner) {
+        req.oldGalleryImageNames.push(req.gallery.banner);
+      }
+    }
 
-  // Replace gallery images
-  if (req.files?.images?.length) {
-    req.body.images = await replaceImages({
-      files: req.files.images,
-      folderPath: galleryFolderPath,
-      storageFolder: req.gallery.storageFolder,
-      oldFileNames: req.gallery.images,
-      prefix: "image",
-      width: 1000,
-      height: 500,
-    });
+    // Replace logo
+    if (req.files?.logo?.length) {
+      req.body.logo = await processImage({
+        file: req.files.logo[0],
+        type: STORAGE_TYPES.GALLERIES,
+        folderName: storageFolder,
+        prefix: "logo",
+        width: 500,
+        height: 500,
+        options: {
+          fit: "contain",
+        },
+      });
+      req.uploadedGalleryImageNames.push(req.body.logo);
+      if (req.gallery.logo) {
+        req.oldGalleryImageNames.push(req.gallery.logo);
+      }
+    }
+
+    // Replace gallery images
+    if (req.files?.images?.length) {
+      req.body.images = await processImages({
+        files: req.files.images,
+        type: STORAGE_TYPES.GALLERIES,
+        folderName: storageFolder,
+        prefix: "image",
+        width: 1000,
+        height: 500,
+      });
+      req.uploadedGalleryImageNames.push(...req.body.images);
+      req.oldGalleryImageNames.push(...req.gallery.images);
+    }
+  } catch (error) {
+    if (req.uploadedGalleryImageNames.length) {
+      await deleteStorageFiles(
+        STORAGE_TYPES.GALLERIES,
+        storageFolder,
+        req.uploadedGalleryImageNames,
+      );
+    }
+    throw error;
   }
 
   next();
@@ -169,7 +193,23 @@ const getMyGallery = asyncHandler(async (req, res) => {
 //@desc Create a new gallery
 //@route POST /api/v1/galleries
 //@access Private (gallery_owner)
-const createGallery = factory.createOne(prisma.gallery);
+const createGallery = asyncHandler(async (req, res) => {
+  let gallery;
+
+  try {
+    gallery = await prisma.gallery.create({ data: req.body });
+  } catch (error) {
+    if (req.body.storageFolder) {
+      await deleteStorageFolder(
+        STORAGE_TYPES.GALLERIES,
+        req.body.storageFolder,
+      );
+    }
+    throw error;
+  }
+
+  res.status(201).json({ data: gallery });
+});
 
 //@desc Get all galleries
 //@route GET /api/v1/galleries
@@ -184,12 +224,44 @@ const getGallery = factory.getOne(prisma.gallery);
 //@desc Update a gallery by id
 //@route PUT /api/v1/galleries/:id
 //@access Private (gallery_owner)
-const updateGallery = factory.updateOne(prisma.gallery);
+const updateGallery = asyncHandler(async (req, res) => {
+  let gallery;
+
+  try {
+    gallery = await prisma.gallery.update({
+      where: { id: req.gallery.id },
+      data: req.body,
+    });
+  } catch (error) {
+    if (req.uploadedGalleryImageNames.length) {
+      await deleteStorageFiles(
+        STORAGE_TYPES.GALLERIES,
+        req.gallery.storageFolder,
+        req.uploadedGalleryImageNames,
+      );
+    }
+    throw error;
+  }
+
+  if (req.oldGalleryImageNames.length) {
+    await deleteStorageFiles(
+      STORAGE_TYPES.GALLERIES,
+      req.gallery.storageFolder,
+      req.oldGalleryImageNames,
+    );
+  }
+
+  res.status(200).json({ data: gallery });
+});
 
 //@desc Delete a gallery by id
 //@route DELETE /api/v1/galleries/:id
 //@access Private (gallery_owner)
-const deleteGallery = factory.deleteOne(prisma.gallery);
+const deleteGallery = asyncHandler(async (req, res) => {
+  await prisma.gallery.delete({ where: { id: req.gallery.id } });
+  await deleteStorageFolder(STORAGE_TYPES.GALLERIES, req.gallery.storageFolder);
+  res.status(204).send();
+});
 
 //@desc Get number of galleries
 //@route GET /api/v1/galleries/count
@@ -215,6 +287,5 @@ module.exports = {
   updateGallery,
   getAllGalleries,
   deleteGallery,
-  deleteGalleryImages,
   countGalleries,
 };

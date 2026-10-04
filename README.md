@@ -29,6 +29,24 @@ npm run start:dev
 Replace all placeholders in `.env` before starting the server. Never commit real
 credentials.
 
+## Image storage
+
+Image uploads are held in Multer memory, validated/converted by Sharp, resized,
+and saved as WebP through the storage service. Uploads are limited to 5 MB per
+file. `STORAGE_PROVIDER=local` (the default) stores files under
+`storage/uploads/<type>/<folder>/<file>`. Set `STORAGE_PROVIDER=r2` to store the
+same object keys in Cloudflare R2; the existing `/storage/uploads/...` image
+paths redirect to `R2_PUBLIC_URL`.
+
+For R2, configure `S3_BUCKET_ENDPOINT`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`,
+`R2_BUCKET_NAME`, and `R2_PUBLIC_URL` in the deployment environment. These names
+match Cloudflare's S3 credentials. `R2_PUBLIC_URL` should be the root of a public
+R2 bucket or its custom domain. The access key needs object read/write/delete
+and bucket-list permissions. Keep credentials private; only the public URL is
+sent to image clients. Cloudflare's `ACCOUNT_ID` and `API_TOKEN` aren't used by
+the S3-compatible client; the endpoint and access-key pair provide its
+connection details.
+
 The API is mounted at `/api/v1`. The currently available endpoint is:
 
 ```http
