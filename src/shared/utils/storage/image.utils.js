@@ -9,6 +9,32 @@ const {
 
 const getFileDate = () => new Date().toISOString().replace(/[:.]/g, "-");
 
+const getStableImageFolder = ({ id, mainImageUrl, images = [] }) => {
+  for (const imageRef of [mainImageUrl, ...images]) {
+    if (typeof imageRef !== "string" || /^https?:\/\//i.test(imageRef)) {
+      continue;
+    }
+
+    const [folderName, fileName, ...extraSegments] = imageRef.split("/");
+    if (
+      folderName &&
+      fileName &&
+      extraSegments.length === 0 &&
+      folderName !== "." &&
+      folderName !== ".." &&
+      !folderName.includes("\\")
+    ) {
+      return folderName;
+    }
+  }
+
+  if (typeof id !== "string" || !id) {
+    throw new Error("A stable image folder requires an entity ID");
+  }
+
+  return id;
+};
+
 const processImage = async ({
   file,
   type = STORAGE_TYPES.GALLERIES,
@@ -74,6 +100,7 @@ const processImages = async ({
 };
 
 module.exports = {
+  getStableImageFolder,
   processImage,
   processImages,
 };

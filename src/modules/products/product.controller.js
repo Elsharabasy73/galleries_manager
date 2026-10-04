@@ -9,6 +9,7 @@ const {
   STORAGE_TYPES,
 } = require("../../shared/utils/storage/storage");
 const {
+  getStableImageFolder,
   processImage,
   processImages,
 } = require("../../shared/utils/storage/image.utils");
@@ -115,7 +116,21 @@ const processProductImages = asyncHandler(async (req, res, next) => {
     return next();
   }
 
-  const folderName = `${req.body.slug || req.product.slug}-${uuidv4()}`;
+  const productId = req.method === "POST" ? uuidv4() : req.product.id;
+  const folderName = getStableImageFolder(
+    req.method === "POST"
+      ? { id: productId }
+      : {
+          id: req.product.id,
+          mainImageUrl: req.product.mainImageUrl,
+          images: req.product.images,
+        },
+  );
+
+  if (req.method === "POST") {
+    req.body.id = productId;
+  }
+
   let primaryImageRef;
   let extraImageRefs = [];
 

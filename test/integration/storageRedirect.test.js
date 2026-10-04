@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs/promises");
+const path = require("node:path");
 const test = require("node:test");
 const request = require("supertest");
 
@@ -25,4 +27,31 @@ test("R2-backed local image paths redirect to the public object URL", async () =
     response.headers.location,
     "https://images.example.com/uploads/galleries/demo/logo.webp",
   );
+});
+
+test("R2 mode serves a matching local file before redirecting to R2", async () => {
+  const localGalleryRoot = path.join(
+    process.cwd(),
+    "storage",
+    "uploads",
+    "galleries",
+  );
+  await fs.mkdir(localGalleryRoot, { recursive: true });
+  const localFolder = await fs.mkdtemp(
+    path.join(localGalleryRoot, "legacy-local-"),
+  );
+  const fileName = "legacy-image.txt";
+  const contents = "this image has not been migrated to R2";
+
+  try {
+    await fs.writeFile(path.join(localFolder, fileName), contents);
+    const response = await request(createApp()).get(
+      `/storage/uploads/galleries/${path.basename(localFolder)}/${fileName}`,
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.text, contents);
+  } finally {
+    await fs.rm(localFolder, { recursive: true, force: true });
+  }
 });

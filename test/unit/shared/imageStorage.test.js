@@ -11,8 +11,35 @@ const {
   getStorageFolderPath,
 } = require("../../../src/shared/utils/storage/storage");
 const {
+  getStableImageFolder,
   processImage,
 } = require("../../../src/shared/utils/storage/image.utils");
+
+test("stable image folder prefers existing refs and falls back to the entity ID", () => {
+  assert.equal(
+    getStableImageFolder({
+      id: "product-id",
+      mainImageUrl: "old-name-uuid/main.webp",
+      images: ["other-folder/extra.webp"],
+    }),
+    "old-name-uuid",
+  );
+  assert.equal(
+    getStableImageFolder({
+      id: "product-id",
+      mainImageUrl: "https://images.example.com/main.webp",
+      images: [],
+    }),
+    "product-id",
+  );
+  assert.equal(
+    getStableImageFolder({
+      id: "product-id",
+      images: ["existing-folder/extra.webp"],
+    }),
+    "existing-folder",
+  );
+});
 
 test("Sharp output is stored via the selected provider with stable image URLs", async () => {
   const originalCwd = process.cwd();
