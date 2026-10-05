@@ -19,6 +19,7 @@ const getStorageProvider = () => {
   );
 };
 
+// Route all storage operations through the configured backend; local remains the default.
 const getStorage = () =>
   getStorageProvider() === STORAGE_PROVIDER.R2 ? r2Storage : localStorage;
 
@@ -53,6 +54,7 @@ const saveStorageFile = async (file) => {
   validateType(file.type);
   validateStoragePath(file.folderName, "folder");
   validateStoragePath(file.fileName, "file name");
+  // The selected backend receives the Sharp-optimized buffer and stores it at the stable key.
   return getStorage().saveStorageFile(file);
 };
 
@@ -91,6 +93,7 @@ const getStorageFileUrl = (type, folderName, fileName) => {
   validateStoragePath(fileName, "file name");
 
   if (getStorageProvider() === STORAGE_PROVIDER.R2) {
+    // Existing API image paths are preserved while R2 uses its configured public domain.
     return r2Storage.getStorageFileUrl(type, folderName, fileName);
   }
 

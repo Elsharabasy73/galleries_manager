@@ -8,6 +8,7 @@ const {
 
 let client;
 
+// Read R2 configuration only when R2 is selected so local storage needs no R2 secrets.
 const required = (name) => {
   const value = process.env[name];
 
@@ -20,6 +21,7 @@ const required = (name) => {
 
 const getClient = () => {
   if (!client) {
+    // Cloudflare R2 exposes an S3-compatible API; these are its generated S3 credentials.
     client = new S3Client({
       region: "auto",
       endpoint: required("S3_BUCKET_ENDPOINT"),
@@ -34,9 +36,12 @@ const getClient = () => {
 };
 
 const getBucket = () => required("R2_BUCKET_NAME");
+
+// R2 has flat object keys, so folders are represented by slash-separated prefixes.
 const getKey = (type, folderName, fileName) =>
   ["uploads", type, folderName, fileName].join("/");
 
+// Store the optimized image buffer as an object and preserve its MIME type for delivery.
 const saveStorageFile = async ({
   type,
   folderName,
@@ -44,6 +49,7 @@ const saveStorageFile = async ({
   buffer,
   contentType,
 }) => {
+  //equal to client.send();
   await getClient().send(
     new PutObjectCommand({
       Bucket: getBucket(),
@@ -54,6 +60,7 @@ const saveStorageFile = async ({
   );
 };
 
+// Remove one object using the same key layout used during upload.
 const deleteStorageFile = async (type, folderName, fileName) => {
   await getClient().send(
     new DeleteObjectCommand({
@@ -63,6 +70,7 @@ const deleteStorageFile = async (type, folderName, fileName) => {
   );
 };
 
+// R2 has no real directories; list every object with this prefix and delete in pages.
 const deleteStorageFolder = async (type, folderName) => {
   const storageClient = getClient();
   const prefix = `uploads/${type}/${folderName}/`;
@@ -99,6 +107,7 @@ const deleteStorageFolder = async (type, folderName) => {
   } while (continuationToken);
 };
 
+// Product records keep folder/file references together; split that reference into R2 key parts.
 const deleteStorageKey = async (type, key) => {
   const segments = key.split("/");
   const fileName = segments.pop();
@@ -110,6 +119,7 @@ const deleteStorageKey = async (type, key) => {
   await deleteStorageFile(type, segments.join("/"), fileName);
 };
 
+// Fetch every page so admin inventory and orphan checks see the full bucket prefix.
 const listStorageFiles = async (type) => {
   const storageClient = getClient();
   const prefix = `uploads/${type}/`;
@@ -139,6 +149,7 @@ const listStorageFiles = async (type) => {
   return files;
 };
 
+// Build a client-facing URL using the configured public bucket domain.
 const getStorageFileUrl = (type, folderName, fileName) => {
   const publicUrl = required("R2_PUBLIC_URL").replace(/\/+$/, "");
   const parsedPublicUrl = new URL(publicUrl);

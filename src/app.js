@@ -36,6 +36,7 @@ const createApp = () => {
   );
   app.use(express.json({ limit: "1mb" }));
   if (getStorageProvider() === "r2") {
+    // Continue serving legacy files locally before redirecting missing files to R2.
     app.use("/storage", express.static(path.join(__dirname, "..", "storage")));
     app.use("/storage", (req, res, next) => {
       if (req.method !== "GET" && req.method !== "HEAD") {

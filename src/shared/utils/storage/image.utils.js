@@ -50,6 +50,7 @@ const processImage = async ({
     .webp({ quality: 82, effort: 4 })
     .toBuffer();
 
+  // Persist only the optimized output; the storage provider decides local disk vs R2.
   await saveStorageFile({
     type,
     folderName,

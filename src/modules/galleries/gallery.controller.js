@@ -107,7 +107,7 @@ const resizeAndUpdateGalleryImages = asyncHandler(async (req, res, next) => {
   const storageFolder =
     req.gallery.storageFolder ||
     (hasUploadedImages ? `${req.gallery.slug}-${uuidv4()}` : undefined);
-
+  // If the gallery already has a storage folder, use it; otherwise, create a new one for the uploaded images.
   if (storageFolder && !req.gallery.storageFolder) {
     req.body.storageFolder = storageFolder;
   }
