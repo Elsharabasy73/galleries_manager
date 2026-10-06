@@ -32,8 +32,10 @@ credentials.
 ## Image storage
 
 Image uploads are held in Multer memory, validated/converted by Sharp, resized,
-and saved as WebP through the storage service. Uploads are limited to 5 MB per
-file. `STORAGE_PROVIDER=local` (the default) stores files under
+and saved as WebP at quality 90 through the storage service. Processed images
+target an average size of 60-100 KB, but file size varies with image content and
+dimensions; this is not a per-image size limit. Incoming uploads are limited to
+200 KB per file. `STORAGE_PROVIDER=local` (the default) stores files under
 `storage/uploads/<type>/<folder>/<file>`. Set `STORAGE_PROVIDER=r2` to store the
 same object keys in Cloudflare R2; the existing `/storage/uploads/...` image
 paths redirect to `R2_PUBLIC_URL`.

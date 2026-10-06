@@ -47,7 +47,7 @@ const processImage = async ({
   const fileName = `${prefix}-${getFileDate()}-${uuidv4()}.webp`;
   const buffer = await sharp(file.buffer)
     .resize(width, height, options)
-    .webp({ quality: 82, effort: 4 })
+    .webp({ quality: 90, effort: 4 })
     .toBuffer();
 
   // Persist only the optimized output; the storage provider decides local disk vs R2.

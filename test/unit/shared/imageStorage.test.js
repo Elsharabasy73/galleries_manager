@@ -53,31 +53,60 @@ test("Sharp output is stored via the selected provider with stable image URLs", 
     process.chdir(temporaryDirectory);
     process.env.STORAGE_PROVIDER = "local";
 
-    const inputBuffer = await sharp({
-      create: {
-        width: 64,
-        height: 64,
-        channels: 3,
-        background: "#cc8844",
-      },
+    const width = 128;
+    const height = 128;
+    const pixels = Buffer.alloc(width * height * 3);
+    let seed = 12345;
+    for (let index = 0; index < pixels.length; index += 1) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      pixels[index] = seed >>> 24;
+    }
+    const inputBuffer = await sharp(pixels, {
+      raw: { width, height, channels: 3 },
     })
-      .jpeg()
+      .png()
       .toBuffer();
     const fileName = await processImage({
       file: { buffer: inputBuffer },
       type: "galleries",
       folderName: "test-gallery",
       prefix: "logo",
-      width: 32,
-      height: 32,
+      width,
+      height,
     });
     const savedPath = path.join(
       getStorageFolderPath("galleries", "test-gallery"),
       fileName,
     );
+    const previousQualityBuffer = await sharp(inputBuffer)
+      .resize(width, height)
+      .webp({ quality: 82, effort: 4 })
+      .toBuffer();
+    const originalPixels = await sharp(inputBuffer)
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    const previousQualityPixels = await sharp(previousQualityBuffer)
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    const currentQualityPixels = await sharp(savedPath)
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    const meanSquaredError = (pixelsA, pixelsB) =>
+      pixelsA.reduce(
+        (total, pixel, index) => total + (pixel - pixelsB[index]) ** 2,
+        0,
+      ) / pixelsA.length;
 
     assert.match(fileName, /\.webp$/);
     assert.equal((await sharp(savedPath).metadata()).format, "webp");
+    assert.ok(
+      meanSquaredError(originalPixels, currentQualityPixels) <
+        meanSquaredError(originalPixels, previousQualityPixels),
+      "quality 90 should preserve more source detail than quality 82",
+    );
     assert.equal(
       getStorageFileUrl("galleries", "test-gallery", fileName),
       `/storage/uploads/galleries/test-gallery/${fileName}`,
