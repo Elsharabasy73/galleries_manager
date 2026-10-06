@@ -17,7 +17,9 @@
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+
+    "postinstall": "prisma generate"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -28,6 +30,7 @@
     "@getbrevo/brevo": "^6.0.3",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "prisma": "^7.9.1",
     "@react-email/render": "^2.1.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
