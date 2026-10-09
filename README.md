@@ -226,7 +226,8 @@ A["Auth Service"] -->|"await sendEmail(options, purpose)"| B["sendEmail"]
     P --> O
     N --> O
 
-Configure `RESEND_API_KEY` and `RESEND_FROM` as usual. For failover, configure
+Configure `RESEND_API_KEY` and set `RESEND_FROM` to the verified sender email
+address (the display name is set to `🛋️GALLERI` by the app). For failover, configure
 `BREVO_API_KEY` from your Brevo API settings and set `BREVO_FROM` to a sender
 address verified in Brevo. Keep `SENDER=RESEND` (or leave it unset) to enable
 Resend with Brevo API fallback. `SENDER=BREVO` sends directly through Brevo's

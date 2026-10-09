@@ -36,7 +36,7 @@ const getEnvironment = () => {
     resendApiKey: requireEnvironmentVariable("RESEND_API_KEY"),
     resendFrom: requireEnvironmentVariable("RESEND_FROM"),
     brevoApiKey: requireEnvironmentVariable("BREVO_API_KEY"),
-    // brevoFrom: requireEnvironmentVariable("BREVO_FROM"),
+    brevoFrom: requireEnvironmentVariable("BREVO_FROM"),
     redisUrl: requireEnvironmentVariable("REDIS_URL"),
     codeExpiresIn: process.env.CODE_EXPIRES_IN || "60",
     // Public origin of this API, used to build absolute URLs (e.g. email assets).

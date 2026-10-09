@@ -76,7 +76,7 @@ const sendEmailWithGmail = async (options, emailTemplate) => {
   });
 
   const mailOptions = {
-    from: `"ElShaRabasy APP" <${process.env.SENDER_EMAIL}>`,
+    from: `"🛋️GALLERI" <${process.env.SENDER_EMAIL}>`,
     to: options.email,
     subject: options.subject,
     html,
@@ -93,7 +93,7 @@ const sendEmailWithResend = async (options, emailTemplate) => {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
-    from: process.env.RESEND_FROM,
+    from: `"🛋️GALLERI" <${process.env.RESEND_FROM}>`,
     to: options.email,
     subject: options.subject,
     html,
@@ -117,7 +117,7 @@ const sendEmailWithBrevoApi = async (options, emailTemplate, brevoClient) => {
 
   return client.transactionalEmails.sendTransacEmail({
     sender: {
-      name: "ElShaRabasy APP",
+      name: "🛋️GALLERI",
       email: brevoFrom,
     },
     to: [{ email: options.email }],
