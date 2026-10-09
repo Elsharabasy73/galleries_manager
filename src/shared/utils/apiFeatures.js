@@ -43,6 +43,12 @@ class ApiFeatures {
             case "lt":
               operators.lt = operatorValue;
               break;
+
+            case "in":
+              operators.in = Array.isArray(operatorValue)
+                ? operatorValue
+                : String(operatorValue).split(",").filter(Boolean);
+              break;
           }
         }
 
