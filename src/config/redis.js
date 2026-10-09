@@ -7,10 +7,16 @@ let redis;
 const getRedis = () => {
   if (!redis) {
     const { redisUrl } = getEnvironment();
+    const isHerokuTlsConnection =
+      Boolean(process.env.DYNO) && redisUrl.startsWith("rediss://");
+    // Keep TLS encryption enabled while working around Heroku Redis's untrusted certificate chain.
     redis = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       enableReadyCheck: true,
       lazyConnect: false,
+      ...(isHerokuTlsConnection && {
+        tls: { rejectUnauthorized: false },
+      }),
     });
 
     redis.on("error", (err) => {
