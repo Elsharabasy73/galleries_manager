@@ -5,6 +5,7 @@ const router = express.Router();
 const {
   signup,
   login,
+  googleLogin,
   sendVerificationOtp,
   verifyEmail,
   forgotPassword,
@@ -16,6 +17,7 @@ const {
 const {
   signupValidator,
   loginValidator,
+  googleLoginValidator,
   sendVerificationOtpValidator,
   verifyEmailValidator,
   forgotPasswordValidator,
@@ -38,6 +40,8 @@ router.post(
 router.post("/verify-email", verifyEmailValidator, verifyEmail);
 
 router.post("/login", loginValidator, login);
+
+router.post("/google", googleLoginValidator, googleLogin);
 
 router.post("/forgot-password", forgotPasswordValidator, forgotPassword);
 

@@ -82,6 +82,17 @@ exports.loginValidator = [
   validatorMiddleware,
 ];
 
+exports.googleLoginValidator = [
+  check("idToken").notEmpty().withMessage("Google credential is required"),
+
+  check("role")
+    .optional()
+    .isIn([ROLES.GALLERY_OWNER, ROLES.CRAFTSMAN, ROLES.USER])
+    .withMessage("Invalid role. Allowed roles: gallery_owner, craftsman, user"),
+
+  validatorMiddleware,
+];
+
 exports.sendVerificationOtpValidator = [
   check("email")
     .notEmpty()

@@ -43,6 +43,16 @@ exports.login = asyncHandler(async (req, res) => {
   });
 });
 
+exports.googleLogin = asyncHandler(async (req, res) => {
+  const { user, token } = await authService.googleLogin(req.body);
+
+  res.status(200).json({
+    status: "success",
+    data: user,
+    token,
+  });
+});
+
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const email = await authService.forgotPassword(req.body.email);
 

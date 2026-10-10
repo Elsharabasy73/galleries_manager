@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const { OAuth2Client } = require("google-auth-library");
 
 const { getPrisma } = require("../../config/prisma");
 const ApiError = require("../../shared/utils/ApiError");
@@ -144,6 +145,13 @@ const login = async ({ email, password }) => {
     );
   }
 
+  if (!user.password) {
+    throw new ApiError(
+      "This account uses Google sign-in. Please continue with Google.",
+      401,
+    );
+  }
+
   const passwordCorrect = await bcrypt.compare(password, user.password);
 
   if (!passwordCorrect) {
@@ -247,11 +255,98 @@ const resetPassword = async ({ email, password }) => {
   };
 };
 
+// Sign in / sign up with Google. Verifies the GIS ID token, then finds or
+// creates the user and returns our own JWT (same shape as password login).
+// Google-verified emails skip the OTP flow (isActive = true).
+const googleLogin = async ({ idToken, role }) => {
+  const prisma = getPrisma();
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+
+  if (!clientId) {
+    throw new ApiError("Google sign-in is not configured", 500);
+  }
+
+  const client = new OAuth2Client(clientId);
+  let payload;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: clientId,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    throw new ApiError("Invalid Google credential", 401);
+  }
+
+  if (!payload || payload.email_verified !== true || !payload.email) {
+    throw new ApiError("Google email is not verified", 401);
+  }
+
+  const googleId = payload.sub;
+  const email = payload.email.toLowerCase();
+
+  // 1. Already linked Google account
+  let user = await prisma.user.findUnique({ where: { googleId } });
+
+  // 2. Existing email account (password or OTP signup) -> link Google to it
+  if (!user) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+
+    if (existing) {
+      user = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          googleId,
+          isActive: true,
+          avatar: existing.avatar || payload.picture || undefined,
+          firstName: existing.firstName || payload.given_name || undefined,
+          lastName: existing.lastName || payload.family_name || undefined,
+        },
+      });
+    }
+  }
+
+  // 3. Brand-new user -> role is required (admin can never be self-assigned)
+  if (!user) {
+    const allowed = ["user", "gallery_owner", "craftsman"];
+
+    if (!role || !allowed.includes(role)) {
+      throw new ApiError(
+        "Role is required for new accounts. Allowed roles: user, gallery_owner, craftsman",
+        400,
+      );
+    }
+
+    user = await prisma.user.create({
+      data: {
+        email,
+        password: null,
+        googleId,
+        firstName: payload.given_name || "",
+        lastName: payload.family_name || "",
+        avatar: payload.picture || null,
+        role,
+        isActive: true,
+      },
+    });
+  }
+
+  if (user.isActive === false) {
+    throw new ApiError("Your account has been deactivated", 401);
+  }
+
+  const token = generateAuthToken({ userId: user.id, role: user.role });
+
+  return { user, token };
+};
+
 module.exports = {
   signup,
   sendVerificationOtp,
   verifyEmail,
   login,
+  googleLogin,
   forgotPassword,
   verifyResetPasswordOTP,
   resetPassword,
