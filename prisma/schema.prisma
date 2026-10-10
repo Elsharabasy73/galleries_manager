@@ -268,3 +268,36 @@ model PageView {
   @@index([path])
   @@index([visitorId])
 }
+
+enum SupportTicketType {
+  problem
+  feature
+  question
+  other
+}
+
+enum SupportTicketStatus {
+  new
+  in_progress
+  resolved
+  closed
+}
+
+// Simple public support/contact tickets (no attachments in v1).
+model SupportTicket {
+  id          String              @id @default(uuid())
+  name        String
+  email       String
+  type        SupportTicketType   @default(problem)
+  subject     String
+  description String
+  status      SupportTicketStatus @default(new)
+  userId      String?
+  pageUrl     String?
+  userAgent   String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([type])
+}
